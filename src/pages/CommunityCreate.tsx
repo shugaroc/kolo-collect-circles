@@ -59,7 +59,12 @@ const CommunityCreate = () => {
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    // For boolean values like isPrivate, we need to convert the string to boolean
+    if (name === "isPrivate") {
+      setFormData((prev) => ({ ...prev, [name]: value === "private" }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -217,7 +222,7 @@ const CommunityCreate = () => {
                   <Label htmlFor="privacy">Privacy</Label>
                   <Select
                     defaultValue={formData.isPrivate ? "private" : "public"}
-                    onValueChange={(value) => handleSelectChange("isPrivate", value === "private")}
+                    onValueChange={(value) => handleSelectChange("isPrivate", value)}
                   >
                     <SelectTrigger id="privacy">
                       <SelectValue placeholder="Select privacy" />
