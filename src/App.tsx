@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/layout/Layout";
+import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Communities from "./pages/Communities";
 import PublicCommunities from "./pages/PublicCommunities";
@@ -23,7 +24,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/communities" element={<Communities />} />
             <Route path="/communities/public" element={<PublicCommunities />} />
             <Route path="/communities/:id" element={<CommunityDetail />} />

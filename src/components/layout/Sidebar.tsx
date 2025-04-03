@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { 
   CircleDollarSign, 
@@ -19,7 +18,8 @@ const Sidebar = ({ isSidebarOpen }: SidebarProps) => {
   const location = useLocation();
   
   const navigationItems = [
-    { name: "Dashboard", path: "/", icon: <Home className="h-5 w-5" /> },
+    { name: "Home", path: "/", icon: <Home className="h-5 w-5" /> },
+    { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
     { name: "My Circles", path: "/communities", icon: <CircleDollarSign className="h-5 w-5" /> },
     { name: "Members", path: "/members", icon: <Users className="h-5 w-5" /> },
     { name: "Contributions", path: "/contributions", icon: <LayoutDashboard className="h-5 w-5" /> },
