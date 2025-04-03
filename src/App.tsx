@@ -12,6 +12,7 @@ import PublicCommunities from "./pages/PublicCommunities";
 import CommunityDetail from "./pages/CommunityDetail";
 import CommunityCreate from "./pages/CommunityCreate";
 import Wallet from "./pages/Wallet";
+import Members from "./pages/Members";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/communities/:id" element={<CommunityDetail />} />
             <Route path="/communities/new" element={<CommunityCreate />} />
             <Route path="/wallet" element={<Wallet />} />
+            <Route path="/members" element={<Members />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
