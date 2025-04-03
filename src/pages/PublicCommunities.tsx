@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,9 +11,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Users, Calendar, CircleDollarSign, Globe } from "lucide-react";
+import { Search, Users, Calendar, CircleDollarSign } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
-interface Community {
+interface PublicCommunity {
   id: string;
   name: string;
   description: string;
@@ -20,60 +29,67 @@ interface Community {
   totalContribution: number;
   nextCycle: string;
   status: "Active" | "Locked" | "Completed";
+  admin: string;
 }
 
-const Communities = () => {
+const PublicCommunities = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const communities: Community[] = [
+  // Mock data - in a real app this would come from Supabase
+  const publicCommunities: PublicCommunity[] = [
     {
       id: "1",
-      name: "Family Savings Circle",
-      description: "A circle for our family to save together for emergencies and celebrations",
-      memberCount: 8,
-      totalContribution: 1200,
-      nextCycle: "Feb 15",
+      name: "Community Savings Network",
+      description: "Open savings circle for our local community members",
+      memberCount: 15,
+      totalContribution: 2500,
+      nextCycle: "Apr 20",
       status: "Active",
+      admin: "Sarah Johnson"
     },
     {
       id: "2",
-      name: "Friends Investment Group",
-      description: "Collective saving for our annual vacation fund",
-      memberCount: 5,
-      totalContribution: 800,
-      nextCycle: "Mar 1",
+      name: "Public Investment Group",
+      description: "Everyone welcome! We save together for various projects",
+      memberCount: 12,
+      totalContribution: 1800,
+      nextCycle: "May 1",
       status: "Active",
+      admin: "Michael Chen"
     },
     {
       id: "3",
-      name: "Neighborhood Fund",
-      description: "Community savings for local improvement projects",
-      memberCount: 12,
-      totalContribution: 3000,
-      nextCycle: "Completed",
-      status: "Completed",
+      name: "Neighborhood Support Circle",
+      description: "Join our community-wide savings initiative",
+      memberCount: 20,
+      totalContribution: 3500,
+      nextCycle: "Apr 25",
+      status: "Active",
+      admin: "Elena Rodriguez"
     },
     {
       id: "4",
-      name: "Work Colleagues Circle",
-      description: "Office savings circle for team building events",
-      memberCount: 6,
-      totalContribution: 600,
-      nextCycle: "Apr 5",
+      name: "Open Savings Club",
+      description: "Open to all - save together, grow together",
+      memberCount: 8,
+      totalContribution: 1200,
+      nextCycle: "May 10",
       status: "Active",
+      admin: "David Smith"
     },
     {
       id: "5",
-      name: "School Parents Group",
-      description: "Saving for end of year school trip",
-      memberCount: 10,
-      totalContribution: 1500,
-      nextCycle: "Locked",
-      status: "Locked",
+      name: "Community Growth Fund",
+      description: "Public savings group with moderate contribution amounts",
+      memberCount: 18,
+      totalContribution: 2800,
+      nextCycle: "Apr 30",
+      status: "Active",
+      admin: "Alex Morgan"
     },
   ];
 
-  const filteredCommunities = communities.filter((community) =>
+  const filteredCommunities = publicCommunities.filter((community) =>
     community.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     community.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -94,18 +110,16 @@ const Communities = () => {
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-800">My Circles</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Public Savings Circles</h1>
         <div className="flex gap-2">
-          <Link to="/communities/public">
+          <Link to="/communities/new">
             <Button variant="outline">
-              <Globe className="h-4 w-4 mr-2" />
-              Public Circles
+              Create Your Own Circle
             </Button>
           </Link>
-          <Link to="/communities/new">
+          <Link to="/communities">
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Create New Circle
+              My Circles
             </Button>
           </Link>
         </div>
@@ -114,7 +128,7 @@ const Communities = () => {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
         <Input
-          placeholder="Search circles..."
+          placeholder="Search public circles..."
           className="pl-10"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -124,7 +138,7 @@ const Communities = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCommunities.length === 0 ? (
           <div className="col-span-full text-center py-12">
-            <p className="text-gray-500">No circles found. Try a different search or create a new one.</p>
+            <p className="text-gray-500">No public circles found. Try a different search.</p>
           </div>
         ) : (
           filteredCommunities.map((community) => (
@@ -151,20 +165,41 @@ const Communities = () => {
                     <span>€{community.totalContribution.toFixed(2)} Contributed</span>
                   </div>
                 </div>
+                <div className="mt-4 text-sm text-gray-600">
+                  <p>Created by: {community.admin}</p>
+                </div>
               </CardContent>
               <CardFooter>
-                <Link to={`/communities/${community.id}`} className="w-full">
-                  <Button className="w-full" variant="default">
-                    View Details
-                  </Button>
-                </Link>
+                <Button className="w-full" variant="default">
+                  Request to Join
+                </Button>
               </CardFooter>
             </Card>
           ))
         )}
       </div>
+      
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious href="#" />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink href="#" isActive>1</PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink href="#">2</PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationLink href="#">3</PaginationLink>
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationNext href="#" />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };
 
-export default Communities;
+export default PublicCommunities;

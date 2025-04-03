@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Communities from "./pages/Communities";
+import PublicCommunities from "./pages/PublicCommunities";
 import CommunityDetail from "./pages/CommunityDetail";
 import CommunityCreate from "./pages/CommunityCreate";
 import Wallet from "./pages/Wallet";
@@ -24,6 +25,7 @@ const App = () => (
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/communities" element={<Communities />} />
+            <Route path="/communities/public" element={<PublicCommunities />} />
             <Route path="/communities/:id" element={<CommunityDetail />} />
             <Route path="/communities/new" element={<CommunityCreate />} />
             <Route path="/wallet" element={<Wallet />} />
