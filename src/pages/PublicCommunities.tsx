@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import CommunityMenu from "@/components/navigation/CommunityMenu";
 
 interface PublicCommunity {
   id: string;
@@ -109,17 +109,14 @@ const PublicCommunities = () => {
 
   return (
     <div className="space-y-8">
+      <CommunityMenu />
+      
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-800">Public Savings Circles</h1>
         <div className="flex gap-2">
           <Link to="/communities/new">
             <Button variant="outline">
               Create Your Own Circle
-            </Button>
-          </Link>
-          <Link to="/communities">
-            <Button>
-              My Circles
             </Button>
           </Link>
         </div>

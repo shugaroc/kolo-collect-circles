@@ -10,7 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Users, Calendar, CircleDollarSign, Globe } from "lucide-react";
+import { Search, Plus, Users, Calendar, CircleDollarSign } from "lucide-react";
+import CommunityMenu from "@/components/navigation/CommunityMenu";
 
 interface Community {
   id: string;
@@ -93,15 +94,11 @@ const Communities = () => {
 
   return (
     <div className="space-y-8">
+      <CommunityMenu />
+      
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-800">My Circles</h1>
         <div className="flex gap-2">
-          <Link to="/communities/public">
-            <Button variant="outline">
-              <Globe className="h-4 w-4 mr-2" />
-              Public Circles
-            </Button>
-          </Link>
           <Link to="/communities/new">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
