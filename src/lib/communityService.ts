@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
 
 interface CreateCommunityParams {
   name: string;
@@ -248,12 +249,16 @@ export const updateCommunitySettings = async (params: UpdateCommunityParams) => 
       throw communityError;
     }
     
+    if (!community) {
+      throw new Error("Community not found");
+    }
+    
     if (community.admin_id !== user.id) {
       throw new Error("Only the community admin can update settings");
     }
     
     // Create update object with only provided fields
-    const updateData: any = {};
+    const updateData: Record<string, any> = {};
     if (params.description !== undefined) updateData.description = params.description;
     if (params.minContribution !== undefined) updateData.min_contribution = params.minContribution;
     if (params.maxMembers !== undefined) updateData.max_members = params.maxMembers;
@@ -313,15 +318,21 @@ export const fetchCommunities = async (type: 'my' | 'public' = 'my') => {
         max_members
       `);
     
-    if (type === 'my') {
+    if (type === 'my' && user) {
       // For 'my' type, get communities where user is a member
-      query = query.in('id', 
-        supabase
-          .from('community_members')
-          .select('community_id')
-          .eq('user_id', user?.id)
-      );
-    } else {
+      const { data: memberCommunities } = await supabase
+        .from('community_members')
+        .select('community_id')
+        .eq('user_id', user.id);
+      
+      if (memberCommunities && memberCommunities.length > 0) {
+        const communityIds = memberCommunities.map(item => item.community_id);
+        query = query.in('id', communityIds);
+      } else {
+        // If user has no communities, return empty array early
+        return [];
+      }
+    } else if (type === 'public') {
       // For 'public' type, get communities that are not private
       query = query.eq('is_private', false);
     }
@@ -367,6 +378,10 @@ export const getCommunityDetails = async (communityId: string) => {
       throw communityError;
     }
     
+    if (!community) {
+      throw new Error("Community not found");
+    }
+    
     // Get community members
     const { data: members, error: membersError } = await supabase
       .from('community_members')
@@ -408,9 +423,8 @@ export const getCommunityDetails = async (communityId: string) => {
       .from('users')
       .select('email, display_name')
       .eq('id', community.admin_id)
-      .single();
-    
-    // If admin user fetch fails, we'll just continue without admin details
+      .single()
+      .catch(() => ({ data: null, error: null })); // Fallback if users table doesn't exist
     
     // Get mid-cycles if there's a current cycle
     let midCycles = [];
@@ -426,8 +440,8 @@ export const getCommunityDetails = async (communityId: string) => {
         .eq('cycle_id', cycles[0].id)
         .order('payout_date', { ascending: true });
       
-      if (!midCyclesError) {
-        midCycles = midCyclesData || [];
+      if (!midCyclesError && midCyclesData) {
+        midCycles = midCyclesData;
       }
     }
     
