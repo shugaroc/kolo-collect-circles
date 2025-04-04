@@ -3,15 +3,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Search, Users, Calendar, CircleDollarSign } from "lucide-react";
+import { Search } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -24,7 +16,8 @@ import CommunityMenu from "@/components/navigation/CommunityMenu";
 import { fetchCommunities, joinCommunity } from "@/lib/communityService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import CommunityCard from "@/components/communities/CommunityCard";
+import JoinCommunityDialog from "@/components/communities/JoinCommunityDialog";
 
 interface PublicCommunity {
   id: string;
@@ -34,7 +27,6 @@ interface PublicCommunity {
   total_contribution: number;
   min_contribution: number;
   status: "Active" | "Locked" | "Completed";
-  admin?: string; // We'll need to get this separately
 }
 
 const PublicCommunities = () => {
@@ -67,27 +59,6 @@ const PublicCommunities = () => {
     (community.description && community.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Active":
-        return <Badge className="bg-green-100 text-green-600 font-normal">Active</Badge>;
-      case "Locked":
-        return <Badge className="bg-orange-100 text-orange-600 font-normal">Locked</Badge>;
-      case "Completed":
-        return <Badge className="bg-blue-100 text-blue-600 font-normal">Completed</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-  
-  const formatNextCycleDate = (status: string) => {
-    if (status === "Completed") return "Completed";
-    if (status === "Locked") return "Locked";
-    
-    // In a real implementation, we would get this from the actual cycle data
-    return "Next: " + new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString();
-  };
-  
   const handleJoinRequest = (communityId: string) => {
     if (!user) {
       toast.error("Please log in to join a community");
@@ -158,43 +129,17 @@ const PublicCommunities = () => {
             </div>
           ) : (
             filteredCommunities.map((community) => (
-              <Card key={community.id} className="shadow-md hover:shadow-lg transition-shadow duration-300">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg text-gray-700">{community.name}</CardTitle>
-                    {getStatusBadge(community.status)}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500 mb-4 line-clamp-2">{community.description || "No description provided."}</p>
-                  <div className="grid grid-cols-2 gap-y-2 text-sm">
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 mr-1 text-kolo-purple" />
-                      <span>{community.member_count} Members</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1 text-kolo-purple" />
-                      <span>{formatNextCycleDate(community.status)}</span>
-                    </div>
-                    <div className="flex items-center col-span-2">
-                      <CircleDollarSign className="h-4 w-4 mr-1 text-kolo-purple" />
-                      <span>€{community.total_contribution?.toFixed(2) || '0.00'} Contributed</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 text-sm text-gray-600">
-                    <p>Min Contribution: €{community.min_contribution?.toFixed(2) || '0.00'}</p>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    className="w-full" 
-                    variant="default"
-                    onClick={() => handleJoinRequest(community.id)}
-                  >
-                    Request to Join
-                  </Button>
-                </CardFooter>
-              </Card>
+              <CommunityCard
+                key={community.id}
+                id={community.id}
+                name={community.name}
+                description={community.description}
+                member_count={community.member_count}
+                total_contribution={community.total_contribution}
+                min_contribution={community.min_contribution}
+                status={community.status}
+                onJoinRequest={handleJoinRequest}
+              />
             ))
           )}
         </div>
@@ -216,22 +161,12 @@ const PublicCommunities = () => {
         </Pagination>
       )}
       
-      <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Join this Circle?</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to join this savings circle? You'll be expected to contribute regularly according to the circle's rules.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowJoinDialog(false)}>Cancel</Button>
-            <Button onClick={handleJoinConfirm} disabled={isJoining}>
-              {isJoining ? "Joining..." : "Confirm Join"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <JoinCommunityDialog
+        open={showJoinDialog}
+        onOpenChange={setShowJoinDialog}
+        onConfirm={handleJoinConfirm}
+        isJoining={isJoining}
+      />
     </div>
   );
 };

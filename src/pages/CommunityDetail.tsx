@@ -9,22 +9,7 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { 
-  UserPlus, 
-  Settings, 
   ArrowLeft, 
-  CircleDollarSign,
-  Users,
-  Calendar,
-  Wallet,
-  Clock,
   AlertTriangle
 } from "lucide-react";
 import CycleProgress from "@/components/communities/CycleProgress";
@@ -32,8 +17,11 @@ import MemberList from "@/components/communities/MemberList";
 import ContributionForm from "@/components/contributions/ContributionForm";
 import { getCommunityDetails, joinCommunity } from "@/lib/communityService";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import SummaryCards from "@/components/communities/Detail/SummaryCards";
+import AboutCircle from "@/components/communities/Detail/AboutCircle";
+import JoinDialog from "@/components/communities/Detail/JoinDialog";
+import CommunityHeader from "@/components/communities/Detail/CommunityHeader";
 
 const CommunityDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -116,19 +104,6 @@ const CommunityDetail = () => {
     );
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Active":
-        return <Badge className="bg-green-100 text-green-600 font-normal">Active</Badge>;
-      case "Locked":
-        return <Badge className="bg-orange-100 text-orange-600 font-normal">Locked</Badge>;
-      case "Completed":
-        return <Badge className="bg-blue-100 text-blue-600 font-normal">Completed</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-  
   // Format cycle progress and dates
   const cycleProgress = {
     cycleNumber: communityData.cycle?.cycle_number || 0,
@@ -156,76 +131,23 @@ const CommunityDetail = () => {
           <span>Back to Circles</span>
         </Link>
         
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">{communityData.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              {getStatusBadge(communityData.status)}
-              <span className="text-sm text-gray-500">Admin: {communityData.admin?.email || "Unknown"}</span>
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            {communityData.userStatus?.isMember ? (
-              <>
-                <Button variant="outline" size="sm">
-                  <UserPlus className="h-4 w-4 mr-1" />
-                  Invite
-                </Button>
-                {communityData.userStatus?.isAdmin && (
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4 mr-1" />
-                    Settings
-                  </Button>
-                )}
-              </>
-            ) : (
-              <Button size="sm" onClick={handleJoinRequest}>
-                <UserPlus className="h-4 w-4 mr-1" />
-                Join Circle
-              </Button>
-            )}
-          </div>
-        </div>
+        <CommunityHeader
+          name={communityData.name}
+          status={communityData.status}
+          adminEmail={communityData.admin?.email || "Unknown"}
+          isMember={communityData.userStatus?.isMember}
+          isAdmin={communityData.userStatus?.isAdmin}
+          onJoinRequest={handleJoinRequest}
+        />
       </div>
       
-      <Card className="shadow-md">
-        <CardContent className="p-4 md:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <CircleDollarSign className="h-5 w-5 text-kolo-purple" />
-                <h3 className="font-medium">Total Contribution</h3>
-              </div>
-              <p className="text-2xl font-bold text-kolo-purple">€{communityData.total_contribution?.toFixed(2) || '0.00'}</p>
-            </div>
-            
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <Wallet className="h-5 w-5 text-kolo-purple" />
-                <h3 className="font-medium">Backup Fund</h3>
-              </div>
-              <p className="text-2xl font-bold text-kolo-purple">€{communityData.backup_fund?.toFixed(2) || '0.00'}</p>
-            </div>
-            
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <Users className="h-5 w-5 text-kolo-purple" />
-                <h3 className="font-medium">Members</h3>
-              </div>
-              <p className="text-2xl font-bold text-kolo-purple">{communityData.member_count} / {communityData.max_members}</p>
-            </div>
-            
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <Clock className="h-5 w-5 text-kolo-purple" />
-                <h3 className="font-medium">Cycle Status</h3>
-              </div>
-              <p className="text-2xl font-bold text-kolo-purple">{communityData.status}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <SummaryCards
+        total_contribution={communityData.total_contribution}
+        backup_fund={communityData.backup_fund}
+        member_count={communityData.member_count}
+        max_members={communityData.max_members}
+        status={communityData.status}
+      />
       
       <Tabs defaultValue="overview">
         <TabsList className="mb-4">
@@ -248,35 +170,13 @@ const CommunityDetail = () => {
               />
             </div>
             
-            <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg text-gray-700">About This Circle</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-gray-600">{communityData.description || "No description provided."}</p>
-                  
-                  <div className="grid grid-cols-2 gap-y-2 text-sm">
-                    <div>
-                      <p className="text-gray-500">Min Contribution</p>
-                      <p className="font-medium">€{communityData.min_contribution}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Backup Fund</p>
-                      <p className="font-medium">{communityData.backup_fund_percentage}%</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Positioning</p>
-                      <p className="font-medium">{communityData.positioning_mode}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Privacy</p>
-                      <p className="font-medium">{communityData.is_private ? "Private" : "Public"}</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <AboutCircle
+              description={communityData.description}
+              min_contribution={communityData.min_contribution}
+              backup_fund_percentage={communityData.backup_fund_percentage}
+              positioning_mode={communityData.positioning_mode}
+              is_private={communityData.is_private}
+            />
           </div>
         </TabsContent>
         
@@ -305,22 +205,14 @@ const CommunityDetail = () => {
         )}
       </Tabs>
       
-      <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Join {communityData.name}?</DialogTitle>
-            <DialogDescription>
-              By joining this circle, you agree to contribute at least €{communityData.min_contribution?.toFixed(2)} according to the circle's schedule.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowJoinDialog(false)}>Cancel</Button>
-            <Button onClick={handleJoinConfirm} disabled={isJoining}>
-              {isJoining ? "Joining..." : "Confirm Join"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <JoinDialog
+        communityName={communityData.name}
+        minContribution={communityData.min_contribution}
+        showDialog={showJoinDialog}
+        setShowDialog={setShowJoinDialog}
+        isJoining={isJoining}
+        onConfirm={handleJoinConfirm}
+      />
     </div>
   );
 };

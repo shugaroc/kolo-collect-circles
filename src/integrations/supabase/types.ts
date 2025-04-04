@@ -230,7 +230,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_community_admin: {
+        Args: {
+          community_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       community_status: "Active" | "Locked" | "Completed"
