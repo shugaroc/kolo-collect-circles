@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -30,17 +29,14 @@ interface UpdateCommunityParams {
 
 export const createCommunity = async (params: CreateCommunityParams) => {
   try {
-    // Get the current authenticated user
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       throw new Error("You must be logged in to create a community");
     }
     
-    // Set initial contribution goal based on members and minimum contribution
     const contributionGoal = params.maxMembers * params.minContribution;
     
-    // Create the community record
     const { data: community, error: communityError } = await supabase
       .from('communities')
       .insert({
@@ -65,7 +61,6 @@ export const createCommunity = async (params: CreateCommunityParams) => {
       throw new Error("Failed to create community");
     }
     
-    // Add the admin user as the first member with position 1
     const { error: memberError } = await supabase
       .from('community_members')
       .insert({
@@ -79,7 +74,6 @@ export const createCommunity = async (params: CreateCommunityParams) => {
       throw memberError;
     }
     
-    // Create activity log entry for community creation
     await supabase
       .from('community_activity_logs')
       .insert({
@@ -100,14 +94,12 @@ export const createCommunity = async (params: CreateCommunityParams) => {
 
 export const joinCommunity = async (params: JoinCommunityParams) => {
   try {
-    // Get the current authenticated user
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       throw new Error("You must be logged in to join a community");
     }
     
-    // Check if the community exists and has space
     const { data: community, error: communityError } = await supabase
       .from('communities')
       .select('member_count, max_members, first_cycle_min, status, id')
@@ -122,12 +114,10 @@ export const joinCommunity = async (params: JoinCommunityParams) => {
       throw new Error("Community not found");
     }
     
-    // Check if the community has space
     if (community.member_count >= community.max_members) {
       throw new Error("This community has reached its maximum member capacity");
     }
     
-    // Check if the user is already a member
     const { data: existingMember, error: memberCheckError } = await supabase
       .from('community_members')
       .select('id')
@@ -143,7 +133,6 @@ export const joinCommunity = async (params: JoinCommunityParams) => {
       throw new Error("You are already a member of this community");
     }
     
-    // Determine the next position for this member
     const { data: lastPosition, error: positionError } = await supabase
       .from('community_members')
       .select('position')
@@ -158,7 +147,6 @@ export const joinCommunity = async (params: JoinCommunityParams) => {
     
     const nextPosition = lastPosition ? lastPosition.position + 1 : 1;
     
-    // Add the user as a member
     const { error: joinError } = await supabase
       .from('community_members')
       .insert({
@@ -172,7 +160,6 @@ export const joinCommunity = async (params: JoinCommunityParams) => {
       throw joinError;
     }
     
-    // Increment the member_count in the community
     const { error: updateError } = await supabase
       .from('communities')
       .update({ 
@@ -184,9 +171,7 @@ export const joinCommunity = async (params: JoinCommunityParams) => {
       throw updateError;
     }
     
-    // If we've reached first_cycle_min members, activate the community
     if (community.member_count + 1 >= community.first_cycle_min && community.status === 'Locked') {
-      // Update community status
       const { error: activateError } = await supabase
         .from('communities')
         .update({ status: 'Active' })
@@ -196,7 +181,6 @@ export const joinCommunity = async (params: JoinCommunityParams) => {
         throw activateError;
       }
       
-      // Create initial cycle
       const { error: cycleError } = await supabase
         .from('community_cycles')
         .insert({
@@ -210,7 +194,6 @@ export const joinCommunity = async (params: JoinCommunityParams) => {
       }
     }
     
-    // Create activity log entry
     await supabase
       .from('community_activity_logs')
       .insert({
@@ -231,14 +214,12 @@ export const joinCommunity = async (params: JoinCommunityParams) => {
 
 export const updateCommunitySettings = async (params: UpdateCommunityParams) => {
   try {
-    // Get the current authenticated user
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       throw new Error("You must be logged in to update community settings");
     }
     
-    // Check if the user is the admin
     const { data: community, error: communityError } = await supabase
       .from('communities')
       .select('admin_id')
@@ -257,7 +238,6 @@ export const updateCommunitySettings = async (params: UpdateCommunityParams) => 
       throw new Error("Only the community admin can update settings");
     }
     
-    // Create update object with only provided fields
     const updateData: Record<string, any> = {};
     if (params.description !== undefined) updateData.description = params.description;
     if (params.minContribution !== undefined) updateData.min_contribution = params.minContribution;
@@ -266,7 +246,6 @@ export const updateCommunitySettings = async (params: UpdateCommunityParams) => 
     if (params.positioningMode !== undefined) updateData.positioning_mode = params.positioningMode;
     if (params.isPrivate !== undefined) updateData.is_private = params.isPrivate;
     
-    // Update the community
     const { error: updateError } = await supabase
       .from('communities')
       .update(updateData)
@@ -276,7 +255,6 @@ export const updateCommunitySettings = async (params: UpdateCommunityParams) => 
       throw updateError;
     }
     
-    // Create activity log entry
     await supabase
       .from('community_activity_logs')
       .insert({
@@ -297,7 +275,6 @@ export const updateCommunitySettings = async (params: UpdateCommunityParams) => 
 
 export const fetchCommunities = async (type: 'my' | 'public' = 'my') => {
   try {
-    // Get the current authenticated user
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user && type === 'my') {
@@ -319,7 +296,6 @@ export const fetchCommunities = async (type: 'my' | 'public' = 'my') => {
       `);
     
     if (type === 'my' && user) {
-      // For 'my' type, get communities where user is a member
       const { data: memberCommunities } = await supabase
         .from('community_members')
         .select('community_id')
@@ -329,11 +305,9 @@ export const fetchCommunities = async (type: 'my' | 'public' = 'my') => {
         const communityIds = memberCommunities.map(item => item.community_id);
         query = query.in('id', communityIds);
       } else {
-        // If user has no communities, return empty array early
         return [];
       }
     } else if (type === 'public') {
-      // For 'public' type, get communities that are not private
       query = query.eq('is_private', false);
     }
     
@@ -353,7 +327,6 @@ export const fetchCommunities = async (type: 'my' | 'public' = 'my') => {
 
 export const getCommunityDetails = async (communityId: string) => {
   try {
-    // Get community details
     const { data: community, error: communityError } = await supabase
       .from('communities')
       .select(`
@@ -382,7 +355,6 @@ export const getCommunityDetails = async (communityId: string) => {
       throw new Error("Community not found");
     }
     
-    // Get community members
     const { data: members, error: membersError } = await supabase
       .from('community_members')
       .select(`
@@ -400,7 +372,6 @@ export const getCommunityDetails = async (communityId: string) => {
       throw membersError;
     }
     
-    // Get current cycle information
     const { data: cycles, error: cyclesError } = await supabase
       .from('community_cycles')
       .select(`
@@ -418,15 +389,11 @@ export const getCommunityDetails = async (communityId: string) => {
       throw cyclesError;
     }
     
-    // Get admin user information
-    const { data: adminUser, error: adminError } = await supabase
-      .from('users')
-      .select('email, display_name')
-      .eq('id', community.admin_id)
-      .single()
-      .catch(() => ({ data: null, error: null })); // Fallback if users table doesn't exist
+    const adminUser = { 
+      email: 'Unknown', 
+      display_name: 'Unknown User' 
+    };
     
-    // Get mid-cycles if there's a current cycle
     let midCycles = [];
     if (cycles && cycles.length > 0) {
       const { data: midCyclesData, error: midCyclesError } = await supabase
@@ -445,7 +412,6 @@ export const getCommunityDetails = async (communityId: string) => {
       }
     }
     
-    // Check if current user is a member
     const { data: { user } } = await supabase.auth.getUser();
     let isMember = false;
     let isAdmin = false;
@@ -462,13 +428,12 @@ export const getCommunityDetails = async (communityId: string) => {
       isAdmin = community.admin_id === user.id;
     }
     
-    // Compile and return the full community details
     return {
       ...community,
       members: members || [],
       cycle: cycles && cycles.length > 0 ? cycles[0] : null,
       midCycles: midCycles,
-      admin: adminUser || { email: 'Unknown', display_name: 'Unknown User' },
+      admin: adminUser,
       userStatus: {
         isMember,
         isAdmin
@@ -483,7 +448,6 @@ export const getCommunityDetails = async (communityId: string) => {
 
 export const getCommunityActivityLogs = async (communityId: string) => {
   try {
-    // Get the current authenticated user
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
