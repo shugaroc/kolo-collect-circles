@@ -3,45 +3,21 @@ import { useState, useEffect } from "react";
 import WalletSummary from "@/components/dashboard/WalletSummary";
 import CommunitySummary from "@/components/dashboard/CommunitySummary";
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { fetchCommunities } from "@/lib/communityService";
 
 const Dashboard = () => {
-  // Mock data - in a real app this would come from API
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [communities, setCommunities] = useState<any[]>([]);
   
+  // Mock data for wallet and activities
   const walletData = {
     availableBalance: 250.75,
     fixedBalance: 500.00,
   };
-
-  const communities = [
-    {
-      id: "1",
-      name: "Family Savings Circle",
-      totalContribution: 1200,
-      contributionGoal: 2000,
-      memberCount: 8,
-      nextCycle: "Feb 15",
-      status: "Active" as const,
-    },
-    {
-      id: "2",
-      name: "Friends Investment Group",
-      totalContribution: 800,
-      contributionGoal: 1500,
-      memberCount: 5,
-      nextCycle: "Mar 1",
-      status: "Active" as const,
-    },
-    {
-      id: "3",
-      name: "Neighborhood Fund",
-      totalContribution: 3000,
-      contributionGoal: 3000,
-      memberCount: 12,
-      nextCycle: "Completed",
-      status: "Completed" as const,
-    }
-  ];
 
   const activities = [
     {
@@ -82,13 +58,39 @@ const Dashboard = () => {
   ];
 
   useEffect(() => {
-    // Simulate API loading
-    const timer = setTimeout(() => {
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      
+      if (user) {
+        try {
+          const communitiesData = await fetchCommunities('my');
+          setCommunities(communitiesData.map((community: any) => ({
+            id: community.id,
+            name: community.name,
+            totalContribution: community.total_contribution || 0,
+            contributionGoal: community.contribution_goal || 0,
+            memberCount: community.member_count || 0,
+            nextCycle: formatNextCycleDate(community.status),
+            status: community.status
+          })));
+        } catch (error) {
+          console.error("Failed to load communities:", error);
+        }
+      }
+      
       setIsLoading(false);
-    }, 1000);
+    };
     
-    return () => clearTimeout(timer);
-  }, []);
+    loadDashboardData();
+  }, [user]);
+  
+  const formatNextCycleDate = (status: string) => {
+    if (status === "Completed") return "Completed";
+    if (status === "Locked") return "Locked";
+    
+    // In a real implementation, we would get this from the actual cycle data
+    return "Next: " + new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString();
+  };
 
   if (isLoading) {
     return (
@@ -106,25 +108,54 @@ const Dashboard = () => {
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <WalletSummary
-          availableBalance={walletData.availableBalance}
-          fixedBalance={walletData.fixedBalance}
-        />
-        
-        <div className="md:col-span-2">
-          <ActivityFeed activities={activities} />
+      {!user ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-4 bg-white rounded-lg shadow">
+          <h2 className="text-xl font-semibold text-gray-700">Welcome to Kolo</h2>
+          <p className="text-gray-600 text-center max-w-md">
+            Sign in to view your dashboard, manage your communities, and track your savings.
+          </p>
+          <Link to="/auth">
+            <Button>Sign In</Button>
+          </Link>
         </div>
-      </div>
-      
-      <div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">My Circles</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {communities.map((community) => (
-            <CommunitySummary key={community.id} {...community} />
-          ))}
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <WalletSummary
+              availableBalance={walletData.availableBalance}
+              fixedBalance={walletData.fixedBalance}
+            />
+            
+            <div className="md:col-span-2">
+              <ActivityFeed activities={activities} />
+            </div>
+          </div>
+          
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">My Circles</h2>
+              <Link to="/communities/new">
+                <Button variant="outline" size="sm">Create New Circle</Button>
+              </Link>
+            </div>
+            
+            {communities.length === 0 ? (
+              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                <p className="text-gray-600 mb-4">You don't have any circles yet.</p>
+                <Link to="/communities/new">
+                  <Button>Create Your First Circle</Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {communities.map((community) => (
+                  <CommunitySummary key={community.id} {...community} />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

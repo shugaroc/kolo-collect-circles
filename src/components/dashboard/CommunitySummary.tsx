@@ -26,7 +26,8 @@ const CommunitySummary = ({
   status,
 }: CommunitySummaryProps) => {
   const navigate = useNavigate();
-  const percentage = (totalContribution / contributionGoal) * 100;
+  // Calculate percentage with fallback for zero goal
+  const percentage = contributionGoal > 0 ? (totalContribution / contributionGoal) * 100 : 0;
   
   const getBadgeColor = (status: string) => {
     switch (status) {

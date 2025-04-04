@@ -9,7 +9,222 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      communities: {
+        Row: {
+          admin_id: string
+          backup_fund: number
+          backup_fund_percentage: number
+          contribution_goal: number
+          created_at: string
+          description: string | null
+          first_cycle_min: number
+          id: string
+          is_private: boolean
+          max_members: number
+          member_count: number
+          min_contribution: number
+          name: string
+          positioning_mode: Database["public"]["Enums"]["positioning_mode"]
+          status: Database["public"]["Enums"]["community_status"]
+          total_contribution: number
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          backup_fund?: number
+          backup_fund_percentage?: number
+          contribution_goal?: number
+          created_at?: string
+          description?: string | null
+          first_cycle_min?: number
+          id?: string
+          is_private?: boolean
+          max_members?: number
+          member_count?: number
+          min_contribution?: number
+          name: string
+          positioning_mode?: Database["public"]["Enums"]["positioning_mode"]
+          status?: Database["public"]["Enums"]["community_status"]
+          total_contribution?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          backup_fund?: number
+          backup_fund_percentage?: number
+          contribution_goal?: number
+          created_at?: string
+          description?: string | null
+          first_cycle_min?: number
+          id?: string
+          is_private?: boolean
+          max_members?: number
+          member_count?: number
+          min_contribution?: number
+          name?: string
+          positioning_mode?: Database["public"]["Enums"]["positioning_mode"]
+          status?: Database["public"]["Enums"]["community_status"]
+          total_contribution?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      community_activity_logs: {
+        Row: {
+          action: string
+          community_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          community_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          community_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_activity_logs_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_cycles: {
+        Row: {
+          community_id: string
+          cycle_number: number
+          end_date: string | null
+          id: string
+          is_complete: boolean
+          start_date: string
+        }
+        Insert: {
+          community_id: string
+          cycle_number: number
+          end_date?: string | null
+          id?: string
+          is_complete?: boolean
+          start_date?: string
+        }
+        Update: {
+          community_id?: string
+          cycle_number?: number
+          end_date?: string | null
+          id?: string
+          is_complete?: boolean
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_cycles_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          contribution_paid: number
+          id: string
+          joined_at: string
+          payment_plan: Json | null
+          penalty: number
+          position: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          contribution_paid?: number
+          id?: string
+          joined_at?: string
+          payment_plan?: Json | null
+          penalty?: number
+          position: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          contribution_paid?: number
+          id?: string
+          joined_at?: string
+          payment_plan?: Json | null
+          penalty?: number
+          position?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_mid_cycles: {
+        Row: {
+          amount: number | null
+          cycle_id: string
+          id: string
+          is_complete: boolean
+          payout_date: string
+          payout_member_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          cycle_id: string
+          id?: string
+          is_complete?: boolean
+          payout_date: string
+          payout_member_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          cycle_id?: string
+          id?: string
+          is_complete?: boolean
+          payout_date?: string
+          payout_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_mid_cycles_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "community_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_mid_cycles_payout_member_id_fkey"
+            columns: ["payout_member_id"]
+            isOneToOne: false
+            referencedRelation: "community_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +233,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      community_status: "Active" | "Locked" | "Completed"
+      positioning_mode: "Random" | "Fixed"
     }
     CompositeTypes: {
       [_ in never]: never

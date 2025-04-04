@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   Tabs, 
@@ -23,62 +23,73 @@ import {
   CircleDollarSign,
   Users,
   Calendar,
-  Wallet
+  Wallet,
+  Clock,
+  AlertTriangle
 } from "lucide-react";
 import CycleProgress from "@/components/communities/CycleProgress";
 import MemberList from "@/components/communities/MemberList";
 import ContributionForm from "@/components/contributions/ContributionForm";
+import { getCommunityDetails, joinCommunity } from "@/lib/communityService";
+import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 const CommunityDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [communityData, setCommunityData] = useState<any>(null);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const { user } = useAuth();
   
-  // Mock data - in a real app this would come from API based on the ID
-  const community = {
-    id: id || "1",
-    name: "Family Savings Circle",
-    description: "A circle for our family to save together for emergencies and celebrations",
-    status: "Active" as const,
-    totalContribution: 1200,
-    backupFund: 120,
-    memberCount: 8,
-    admin: "John Doe",
-    settings: {
-      contributionFrequency: "Monthly",
-      minContribution: 30,
-      maxMembers: 10,
-      backupFundPercentage: 10,
-    },
-    cycle: {
-      number: 2,
-      startDate: "Jan 15, 2024",
-      endDate: "Jun 15, 2024",
-      progress: 65,
-      midCycles: [
-        { id: 1, isComplete: true, payoutDate: "Feb 15, 2024" },
-        { id: 2, isComplete: true, payoutDate: "Mar 15, 2024" },
-        { id: 3, isComplete: false, payoutDate: "Apr 15, 2024" },
-        { id: 4, isComplete: false, payoutDate: "May 15, 2024" },
-        { id: 5, isComplete: false, payoutDate: "Jun 15, 2024" },
-      ]
-    },
-    members: [
-      { id: "1", name: "John Doe", email: "john@example.com", position: 1, status: "active" as const, contributionPaid: 300, penalty: 0 },
-      { id: "2", name: "Jane Smith", email: "jane@example.com", position: 2, status: "active" as const, contributionPaid: 300, penalty: 0 },
-      { id: "3", name: "Bob Johnson", email: "bob@example.com", position: 3, status: "active" as const, contributionPaid: 250, penalty: 10 },
-      { id: "4", name: "Alice Brown", email: "alice@example.com", position: 4, status: "active" as const, contributionPaid: 300, penalty: 0 },
-      { id: "5", name: "Charlie Davis", email: "charlie@example.com", position: 5, status: "inactive" as const, contributionPaid: 50, penalty: 30 },
-    ]
-  };
-
   useEffect(() => {
-    // Simulate API loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    const loadCommunityDetails = async () => {
+      if (!id) return;
+      
+      setIsLoading(true);
+      try {
+        const data = await getCommunityDetails(id);
+        setCommunityData(data);
+      } catch (error) {
+        console.error("Failed to load community details:", error);
+        toast.error("Failed to load community details");
+        navigate("/communities");
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    return () => clearTimeout(timer);
-  }, []);
+    loadCommunityDetails();
+  }, [id, navigate]);
+  
+  const handleJoinRequest = () => {
+    if (!user) {
+      toast.error("Please log in to join a community");
+      navigate("/auth");
+      return;
+    }
+    
+    setShowJoinDialog(true);
+  };
+  
+  const handleJoinConfirm = async () => {
+    if (!id) return;
+    
+    setIsJoining(true);
+    try {
+      await joinCommunity({ communityId: id });
+      // Reload community data to update the UI
+      const data = await getCommunityDetails(id);
+      setCommunityData(data);
+      setShowJoinDialog(false);
+    } catch (error) {
+      // Error handling is done in the service function
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -88,6 +99,19 @@ const CommunityDetail = () => {
             <span className="text-white text-2xl font-bold">K</span>
           </div>
         </div>
+      </div>
+    );
+  }
+  
+  if (!communityData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
+        <AlertTriangle className="h-16 w-16 text-red-500" />
+        <h2 className="text-xl font-semibold text-gray-800">Community Not Found</h2>
+        <p className="text-gray-600">The community you're looking for doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate("/communities")}>
+          Back to Communities
+        </Button>
       </div>
     );
   }
@@ -104,6 +128,25 @@ const CommunityDetail = () => {
         return <Badge variant="outline">Unknown</Badge>;
     }
   };
+  
+  // Format cycle progress and dates
+  const cycleProgress = {
+    cycleNumber: communityData.cycle?.cycle_number || 0,
+    startDate: communityData.cycle?.start_date 
+      ? new Date(communityData.cycle.start_date).toLocaleDateString() 
+      : "Not started",
+    endDate: communityData.cycle?.end_date 
+      ? new Date(communityData.cycle.end_date).toLocaleDateString() 
+      : "TBD",
+    progress: communityData.cycle ? 
+      (communityData.status === "Completed" ? 100 : 
+       communityData.status === "Locked" ? 0 : 65) : 0, // Mock progress for now
+    midCycles: communityData.midCycles?.map((mc: any) => ({
+      id: mc.id,
+      isComplete: mc.is_complete,
+      payoutDate: new Date(mc.payout_date).toLocaleDateString()
+    })) || []
+  };
 
   return (
     <div className="space-y-8">
@@ -115,22 +158,33 @@ const CommunityDetail = () => {
         
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">{community.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-800">{communityData.name}</h1>
             <div className="flex items-center gap-2 mt-1">
-              {getStatusBadge(community.status)}
-              <span className="text-sm text-gray-500">Admin: {community.admin}</span>
+              {getStatusBadge(communityData.status)}
+              <span className="text-sm text-gray-500">Admin: {communityData.admin?.email || "Unknown"}</span>
             </div>
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <UserPlus className="h-4 w-4 mr-1" />
-              Invite
-            </Button>
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-1" />
-              Settings
-            </Button>
+            {communityData.userStatus?.isMember ? (
+              <>
+                <Button variant="outline" size="sm">
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  Invite
+                </Button>
+                {communityData.userStatus?.isAdmin && (
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-1" />
+                    Settings
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Button size="sm" onClick={handleJoinRequest}>
+                <UserPlus className="h-4 w-4 mr-1" />
+                Join Circle
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -143,7 +197,7 @@ const CommunityDetail = () => {
                 <CircleDollarSign className="h-5 w-5 text-kolo-purple" />
                 <h3 className="font-medium">Total Contribution</h3>
               </div>
-              <p className="text-2xl font-bold text-kolo-purple">€{community.totalContribution}</p>
+              <p className="text-2xl font-bold text-kolo-purple">€{communityData.total_contribution?.toFixed(2) || '0.00'}</p>
             </div>
             
             <div className="bg-gray-50 p-4 rounded-lg">
@@ -151,7 +205,7 @@ const CommunityDetail = () => {
                 <Wallet className="h-5 w-5 text-kolo-purple" />
                 <h3 className="font-medium">Backup Fund</h3>
               </div>
-              <p className="text-2xl font-bold text-kolo-purple">€{community.backupFund}</p>
+              <p className="text-2xl font-bold text-kolo-purple">€{communityData.backup_fund?.toFixed(2) || '0.00'}</p>
             </div>
             
             <div className="bg-gray-50 p-4 rounded-lg">
@@ -159,15 +213,15 @@ const CommunityDetail = () => {
                 <Users className="h-5 w-5 text-kolo-purple" />
                 <h3 className="font-medium">Members</h3>
               </div>
-              <p className="text-2xl font-bold text-kolo-purple">{community.memberCount} / {community.settings.maxMembers}</p>
+              <p className="text-2xl font-bold text-kolo-purple">{communityData.member_count} / {communityData.max_members}</p>
             </div>
             
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Calendar className="h-5 w-5 text-kolo-purple" />
-                <h3 className="font-medium">Frequency</h3>
+                <Clock className="h-5 w-5 text-kolo-purple" />
+                <h3 className="font-medium">Cycle Status</h3>
               </div>
-              <p className="text-2xl font-bold text-kolo-purple">{community.settings.contributionFrequency}</p>
+              <p className="text-2xl font-bold text-kolo-purple">{communityData.status}</p>
             </div>
           </div>
         </CardContent>
@@ -177,18 +231,20 @@ const CommunityDetail = () => {
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="contribute">Contribute</TabsTrigger>
+          {communityData.userStatus?.isMember && (
+            <TabsTrigger value="contribute">Contribute</TabsTrigger>
+          )}
         </TabsList>
         
         <TabsContent value="overview">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <CycleProgress
-                cycleNumber={community.cycle.number}
-                startDate={community.cycle.startDate}
-                endDate={community.cycle.endDate}
-                progress={community.cycle.progress}
-                midCycles={community.cycle.midCycles}
+                cycleNumber={cycleProgress.cycleNumber}
+                startDate={cycleProgress.startDate}
+                endDate={cycleProgress.endDate}
+                progress={cycleProgress.progress}
+                midCycles={cycleProgress.midCycles}
               />
             </div>
             
@@ -198,24 +254,24 @@ const CommunityDetail = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <p className="text-gray-600">{community.description}</p>
+                  <p className="text-gray-600">{communityData.description || "No description provided."}</p>
                   
                   <div className="grid grid-cols-2 gap-y-2 text-sm">
                     <div>
                       <p className="text-gray-500">Min Contribution</p>
-                      <p className="font-medium">€{community.settings.minContribution}</p>
+                      <p className="font-medium">€{communityData.min_contribution}</p>
                     </div>
                     <div>
                       <p className="text-gray-500">Backup Fund</p>
-                      <p className="font-medium">{community.settings.backupFundPercentage}%</p>
+                      <p className="font-medium">{communityData.backup_fund_percentage}%</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Admin</p>
-                      <p className="font-medium">{community.admin}</p>
+                      <p className="text-gray-500">Positioning</p>
+                      <p className="font-medium">{communityData.positioning_mode}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Status</p>
-                      <p className="font-medium">{community.status}</p>
+                      <p className="text-gray-500">Privacy</p>
+                      <p className="font-medium">{communityData.is_private ? "Private" : "Public"}</p>
                     </div>
                   </div>
                 </div>
@@ -225,19 +281,46 @@ const CommunityDetail = () => {
         </TabsContent>
         
         <TabsContent value="members">
-          <MemberList members={community.members} />
+          <MemberList members={communityData.members.map((member: any) => ({
+            id: member.id,
+            name: `Member ${member.position}`, // We'd need to fetch user details in a real implementation
+            email: "member@example.com", // Placeholder
+            position: member.position,
+            status: member.status,
+            contributionPaid: member.contribution_paid,
+            penalty: member.penalty
+          }))} />
         </TabsContent>
         
-        <TabsContent value="contribute">
-          <div className="max-w-md mx-auto">
-            <ContributionForm
-              communityName={community.name}
-              minContribution={community.settings.minContribution}
-              currentBalance={250}
-            />
-          </div>
-        </TabsContent>
+        {communityData.userStatus?.isMember && (
+          <TabsContent value="contribute">
+            <div className="max-w-md mx-auto">
+              <ContributionForm
+                communityName={communityData.name}
+                minContribution={communityData.min_contribution}
+                currentBalance={250}
+              />
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
+      
+      <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Join {communityData.name}?</DialogTitle>
+            <DialogDescription>
+              By joining this circle, you agree to contribute at least €{communityData.min_contribution?.toFixed(2)} according to the circle's schedule.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowJoinDialog(false)}>Cancel</Button>
+            <Button onClick={handleJoinConfirm} disabled={isJoining}>
+              {isJoining ? "Joining..." : "Confirm Join"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

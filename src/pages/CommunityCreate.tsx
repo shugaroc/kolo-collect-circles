@@ -36,9 +36,12 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { createCommunity } from "@/lib/communityService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const CommunityCreate = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form state
@@ -67,8 +70,15 @@ const CommunityCreate = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if user is authenticated
+    if (!user) {
+      toast.error("You must be logged in to create a community");
+      navigate("/auth");
+      return;
+    }
     
     // Validation
     if (!formData.name.trim()) {
@@ -78,11 +88,25 @@ const CommunityCreate = () => {
     
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      toast.success("Circle created successfully!");
-      navigate("/communities");
-    }, 1500);
+    try {
+      const communityId = await createCommunity({
+        name: formData.name,
+        description: formData.description,
+        contributionFrequency: formData.contributionFrequency,
+        minContribution: formData.minContribution,
+        maxMembers: formData.maxMembers,
+        backupFundPercentage: formData.backupFundPercentage,
+        positioningMode: formData.positioningMode as "Random" | "Fixed",
+        isPrivate: formData.isPrivate
+      });
+      
+      // Navigate to the new community detail page
+      navigate(`/communities/${communityId}`);
+    } catch (error) {
+      // Error handling is done in the service function
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
