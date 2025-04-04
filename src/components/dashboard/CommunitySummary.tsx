@@ -2,9 +2,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, CalendarDays, AlertCircle } from "lucide-react";
+import { Users, CalendarDays } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface CommunitySummaryProps {
   id: string;
@@ -25,6 +25,7 @@ const CommunitySummary = ({
   nextCycle,
   status,
 }: CommunitySummaryProps) => {
+  const navigate = useNavigate();
   const percentage = (totalContribution / contributionGoal) * 100;
   
   const getBadgeColor = (status: string) => {
@@ -38,6 +39,10 @@ const CommunitySummary = ({
       default:
         return "bg-gray-100 text-gray-600";
     }
+  };
+
+  const handleViewDetails = () => {
+    navigate(`/communities/${id}`);
   };
 
   return (
@@ -71,11 +76,9 @@ const CommunitySummary = ({
             </div>
           </div>
           
-          <Link to={`/communities/${id}`}>
-            <Button className="w-full" variant="default">
-              View Details
-            </Button>
-          </Link>
+          <Button className="w-full" variant="default" onClick={handleViewDetails}>
+            View Details
+          </Button>
         </div>
       </CardContent>
     </Card>
