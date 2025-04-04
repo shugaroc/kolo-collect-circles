@@ -13,7 +13,11 @@ import CommunityDetail from "./pages/CommunityDetail";
 import CommunityCreate from "./pages/CommunityCreate";
 import Wallet from "./pages/Wallet";
 import Members from "./pages/Members";
+import Contributions from "./pages/Contributions";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import { AuthProvider } from "./contexts/AuthContext";
+import RouteGuard from "./components/auth/RouteGuard";
 
 const queryClient = new QueryClient();
 
@@ -23,19 +27,25 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/communities" element={<Communities />} />
-            <Route path="/communities/public" element={<PublicCommunities />} />
-            <Route path="/communities/:id" element={<CommunityDetail />} />
-            <Route path="/communities/new" element={<CommunityCreate />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/members" element={<Members />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <RouteGuard>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/communities" element={<Communities />} />
+                <Route path="/communities/public" element={<PublicCommunities />} />
+                <Route path="/communities/:id" element={<CommunityDetail />} />
+                <Route path="/communities/new" element={<CommunityCreate />} />
+                <Route path="/wallet" element={<Wallet />} />
+                <Route path="/members" element={<Members />} />
+                <Route path="/contributions" element={<Contributions />} />
+              </Route>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </RouteGuard>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
