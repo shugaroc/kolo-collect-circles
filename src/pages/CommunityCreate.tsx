@@ -26,6 +26,7 @@ const CommunityCreate = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -55,6 +56,7 @@ const CommunityCreate = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     // Check if user is authenticated
     if (!user) {
@@ -85,8 +87,17 @@ const CommunityCreate = () => {
       
       // Navigate to the new community detail page
       navigate(`/communities/${communityId}`);
-    } catch (error) {
-      // Error handling is done in the service function
+    } catch (error: any) {
+      console.error("Community creation error:", error);
+      let errorMessage = error.message || "Failed to create community";
+      
+      // Handle specific known errors
+      if (errorMessage.includes("infinite recursion detected in policy")) {
+        errorMessage = "There's a database permission issue. Please try again or contact support.";
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -111,6 +122,12 @@ const CommunityCreate = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-red-50 p-4 rounded-md border border-red-200 text-red-700 text-sm">
+                {error}
+              </div>
+            )}
+            
             <Tabs defaultValue="basic" className="space-y-6">
               <TabsList>
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
