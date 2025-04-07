@@ -17,7 +17,7 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { createCommunity } from "@/lib/communityService";
+import { createCommunity } from "@/lib/services/communityCreateService";
 import { useAuth } from "@/contexts/AuthContext";
 import BasicInfoTab from "@/components/communities/CreateForm/BasicInfoTab";
 import SettingsTab from "@/components/communities/CreateForm/SettingsTab";
