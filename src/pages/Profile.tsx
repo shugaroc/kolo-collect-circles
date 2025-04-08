@@ -55,30 +55,34 @@ const Profile = () => {
       
       setIsLoading(true);
       try {
-        // The SQL migration has created the profiles table
-        const { data, error } = await supabase
+        // Get profile data directly using a custom query
+        const { data: userData, error: userError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single();
         
-        if (error && error.code !== 'PGRST116') {
-          console.error("Error loading profile:", error);
-          toast.error("Failed to load profile data");
-          return;
-        }
-        
-        if (data) {
-          form.reset({
-            fullName: data.full_name || "",
-            email: user.email || "",
-            phoneNumber: data.phone_number || "",
-          });
-        } else {
+        if (userError) {
+          console.error("Error loading profile:", userError);
+          
+          if (userError.code !== 'PGRST116') {
+            toast.error("Failed to load profile data");
+          }
+          
+          // Use fallback data from user auth
           form.reset({
             fullName: user.user_metadata?.full_name || "",
             email: user.email || "",
             phoneNumber: "",
+          });
+          return;
+        }
+        
+        if (userData) {
+          form.reset({
+            fullName: userData.full_name || "",
+            email: user.email || "",
+            phoneNumber: userData.phone_number || "",
           });
         }
       } catch (error) {
@@ -96,7 +100,7 @@ const Profile = () => {
     
     setIsSaving(true);
     try {
-      // Check if profile exists
+      // Check if profile exists using a custom query
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('id')
@@ -108,19 +112,28 @@ const Profile = () => {
       }
       
       if (existingProfile) {
-        // Update existing profile
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            full_name: values.fullName,
-            phone_number: values.phoneNumber,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', user.id);
-          
-        if (error) throw error;
+        // Update existing profile using RPC or direct update
+        const { error } = await supabase.rpc('update_user_profile', {
+          p_user_id: user.id,
+          p_full_name: values.fullName,
+          p_phone_number: values.phoneNumber
+        }).maybeSingle();
+        
+        if (error) {
+          // Fallback to direct update if RPC fails
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              full_name: values.fullName,
+              phone_number: values.phoneNumber,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', user.id);
+            
+          if (updateError) throw updateError;
+        }
       } else {
-        // Create new profile
+        // Create new profile using direct insert
         const { error } = await supabase
           .from('profiles')
           .insert({
