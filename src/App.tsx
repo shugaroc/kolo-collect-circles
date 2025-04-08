@@ -16,6 +16,8 @@ import Members from "./pages/Members";
 import Contributions from "./pages/Contributions";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import { AuthProvider } from "./contexts/AuthContext";
 import RouteGuard from "./components/auth/RouteGuard";
 
@@ -40,6 +42,8 @@ const App = () => (
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/members" element={<Members />} />
                 <Route path="/contributions" element={<Contributions />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
               <Route path="/auth" element={<Auth />} />
               <Route path="*" element={<NotFound />} />

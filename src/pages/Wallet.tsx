@@ -25,18 +25,23 @@ import {
   Wallet as WalletIcon, 
   Lock,
   CircleDollarSign,
-  AlertCircle
+  AlertCircle,
+  CreditCard
 } from "lucide-react";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchWalletBalance, fetchTransactionHistory, WalletBalance, WalletTransaction } from "@/lib/walletService";
 import { depositFunds, withdrawFunds } from "@/lib/walletService";
+import FixFundsForm from "@/components/wallet/FixFundsForm";
+import TransferFundsForm from "@/components/wallet/TransferFundsForm";
 
 const Wallet = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [activeTab, setActiveTab] = useState("deposit");
   const [walletBalance, setWalletBalance] = useState<WalletBalance>({
     availableBalance: 0,
     fixedBalance: 0,
@@ -45,28 +50,28 @@ const Wallet = () => {
   });
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   
-  useEffect(() => {
-    const loadWalletData = async () => {
-      setIsLoading(true);
-      
-      if (user) {
-        try {
-          // Fetch wallet balance
-          const balance = await fetchWalletBalance();
-          setWalletBalance(balance);
-          
-          // Fetch transaction history
-          const history = await fetchTransactionHistory();
-          setTransactions(history);
-        } catch (error) {
-          console.error("Error loading wallet data:", error);
-          toast.error("Failed to load wallet data");
-        }
-      }
-      
-      setIsLoading(false);
-    };
+  const loadWalletData = async () => {
+    setIsLoading(true);
     
+    if (user) {
+      try {
+        // Fetch wallet balance
+        const balance = await fetchWalletBalance();
+        setWalletBalance(balance);
+        
+        // Fetch transaction history
+        const history = await fetchTransactionHistory();
+        setTransactions(history);
+      } catch (error) {
+        console.error("Error loading wallet data:", error);
+        toast.error("Failed to load wallet data");
+      }
+    }
+    
+    setIsLoading(false);
+  };
+  
+  useEffect(() => {
     loadWalletData();
   }, [user]);
 
@@ -81,12 +86,7 @@ const Wallet = () => {
       await depositFunds({ amount });
       
       // Refresh wallet data
-      const balance = await fetchWalletBalance();
-      setWalletBalance(balance);
-      
-      const history = await fetchTransactionHistory();
-      setTransactions(history);
-      
+      await loadWalletData();
       setDepositAmount("");
     } catch (error) {
       // Error is handled by the service function
@@ -104,12 +104,7 @@ const Wallet = () => {
       await withdrawFunds({ amount });
       
       // Refresh wallet data
-      const balance = await fetchWalletBalance();
-      setWalletBalance(balance);
-      
-      const history = await fetchTransactionHistory();
-      setTransactions(history);
-      
+      await loadWalletData();
       setWithdrawAmount("");
     } catch (error) {
       // Error is handled by the service function
@@ -130,6 +125,8 @@ const Wallet = () => {
         return <WalletIcon className="h-4 w-4 text-green-500" />;
       case 'fixed':
         return <Lock className="h-4 w-4 text-gray-500" />;
+      case 'transfer':
+        return <CreditCard className="h-4 w-4 text-purple-500" />;
       default:
         return <CircleDollarSign className="h-4 w-4 text-gray-500" />;
     }
@@ -149,6 +146,8 @@ const Wallet = () => {
         return <Badge className="bg-purple-100 text-purple-600 font-normal">Payout</Badge>;
       case 'fixed':
         return <Badge className="bg-gray-100 text-gray-600 font-normal">Fixed</Badge>;
+      case 'transfer':
+        return <Badge className="bg-indigo-100 text-indigo-600 font-normal">Transfer</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
@@ -281,75 +280,135 @@ const Wallet = () => {
         </Card>
         
         <div className="space-y-6">
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle className="text-lg">Deposit Funds</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="deposit-amount">Amount (€)</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">€</span>
-                    <Input
-                      id="deposit-amount"
-                      className="pl-8"
-                      placeholder="0.00"
-                      value={depositAmount}
-                      onChange={(e) => setDepositAmount(e.target.value)}
-                      type="number"
-                      step="0.01"
-                      min="0"
-                    />
+          <Tabs defaultValue="deposit" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid grid-cols-4 w-full">
+              <TabsTrigger value="deposit">Deposit</TabsTrigger>
+              <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
+              <TabsTrigger value="transfer">Transfer</TabsTrigger>
+              <TabsTrigger value="lock">Lock</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="deposit">
+              <Card className="shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-lg">Deposit Funds</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="deposit-amount">Amount (€)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">€</span>
+                        <Input
+                          id="deposit-amount"
+                          className="pl-8"
+                          placeholder="0.00"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                          type="number"
+                          step="0.01"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                    <Button 
+                      className="w-full" 
+                      onClick={handleDeposit}
+                      disabled={walletBalance.isFrozen}
+                    >
+                      <ArrowUpRight className="h-4 w-4 mr-2" />
+                      Deposit
+                    </Button>
                   </div>
-                </div>
-                <Button 
-                  className="w-full" 
-                  onClick={handleDeposit}
-                  disabled={walletBalance.isFrozen}
-                >
-                  <ArrowUpRight className="h-4 w-4 mr-2" />
-                  Deposit
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="withdraw">
+              <Card className="shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-lg">Withdraw Funds</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="withdraw-amount">Amount (€)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">€</span>
+                        <Input
+                          id="withdraw-amount"
+                          className="pl-8"
+                          placeholder="0.00"
+                          value={withdrawAmount}
+                          onChange={(e) => setWithdrawAmount(e.target.value)}
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max={walletBalance.availableBalance}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Available: €{walletBalance.availableBalance.toFixed(2)}
+                      </p>
+                    </div>
+                    <Button 
+                      className="w-full" 
+                      variant="outline" 
+                      onClick={handleWithdraw}
+                      disabled={walletBalance.isFrozen || walletBalance.availableBalance <= 0}
+                    >
+                      <ArrowDownLeft className="h-4 w-4 mr-2" />
+                      Withdraw
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="transfer">
+              <TransferFundsForm 
+                availableBalance={walletBalance.availableBalance} 
+                onTransferComplete={loadWalletData} 
+              />
+            </TabsContent>
+            
+            <TabsContent value="lock">
+              <FixFundsForm 
+                availableBalance={walletBalance.availableBalance} 
+                onFixComplete={loadWalletData} 
+              />
+            </TabsContent>
+          </Tabs>
           
-          <Card className="shadow-md">
+          <Card className="shadow-md mt-4">
             <CardHeader>
-              <CardTitle className="text-lg">Withdraw Funds</CardTitle>
+              <CardTitle className="text-lg">Payment Methods</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="withdraw-amount">Amount (€)</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">€</span>
-                    <Input
-                      id="withdraw-amount"
-                      className="pl-8"
-                      placeholder="0.00"
-                      value={withdrawAmount}
-                      onChange={(e) => setWithdrawAmount(e.target.value)}
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max={walletBalance.availableBalance}
-                    />
+                <div className="border rounded-md p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-kolo-purple" />
+                    <span>Card Payments</span>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    Available: €{walletBalance.availableBalance.toFixed(2)}
-                  </p>
+                  <Badge variant="outline">Coming Soon</Badge>
                 </div>
-                <Button 
-                  className="w-full" 
-                  variant="outline" 
-                  onClick={handleWithdraw}
-                  disabled={walletBalance.isFrozen || walletBalance.availableBalance <= 0}
-                >
-                  <ArrowDownLeft className="h-4 w-4 mr-2" />
-                  Withdraw
-                </Button>
+                
+                <div className="border rounded-md p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <WalletIcon className="h-5 w-5 text-kolo-purple" />
+                    <span>Bank Transfer</span>
+                  </div>
+                  <Badge variant="outline">Coming Soon</Badge>
+                </div>
+                
+                <div className="border rounded-md p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <CircleDollarSign className="h-5 w-5 text-kolo-purple" />
+                    <span>Crypto</span>
+                  </div>
+                  <Badge variant="outline">Coming Soon</Badge>
+                </div>
               </div>
             </CardContent>
           </Card>

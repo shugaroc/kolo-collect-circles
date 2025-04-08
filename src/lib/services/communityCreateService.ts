@@ -43,6 +43,12 @@ export const createCommunity = async (params: CreateCommunityParams) => {
     
     if (communityError) {
       console.error("Error creating community:", communityError);
+      
+      // Handle specific known errors
+      if (communityError.message?.includes("infinite recursion detected in policy")) {
+        throw new Error("There's a database permission issue with the community creation. Please try again later.");
+      }
+      
       throw communityError;
     }
     
@@ -52,10 +58,13 @@ export const createCommunity = async (params: CreateCommunityParams) => {
     
     console.log("Community created:", community.id);
     
-    // Step 2: Add creator as the first member using a separate function call
-    // This approach helps avoid infinite recursion issues with RLS policies
+    // Step 2: Add creator as the first member - as a separate transaction to avoid policy conflicts
     try {
       console.log("Adding creator as member...");
+      
+      // Short delay to allow database consistency
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const { error: memberError } = await supabase
         .from('community_members')
         .insert({

@@ -1,26 +1,28 @@
 
-import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import { useAuth } from "@/contexts/AuthContext";
+import Footer from "./Footer";
 
 const Layout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-kolo-soft-gray">
-      <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
-      <Sidebar isSidebarOpen={isSidebarOpen} />
+    <div className="min-h-screen bg-gray-50">
+      <Header />
       
-      <main className={`transition-all duration-300 pt-16 ${isSidebarOpen ? 'md:ml-64' : 'ml-0'}`}>
-        <div className="container py-8 px-4 mx-auto">
-          <Outlet />
-        </div>
-      </main>
+      <div className="flex">
+        {user && <Sidebar />}
+        
+        <main className={`flex-1 p-6 ${user ? 'md:ml-64' : ''}`}>
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+      
+      <Footer />
     </div>
   );
 };
