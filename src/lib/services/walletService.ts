@@ -30,8 +30,6 @@ export const fetchWalletBalance = async (): Promise<WalletBalance> => {
   try {
     const user = await getAuthenticatedUser();
     
-    // In a real implementation, this would fetch from a wallets table
-    // For now, return mock data until the database schema is implemented
     const { data, error } = await supabase
       .from('user_wallets')
       .select('available_balance, fixed_balance, is_frozen')
@@ -80,7 +78,6 @@ export const fetchTransactionHistory = async (): Promise<WalletTransaction[]> =>
   try {
     const user = await getAuthenticatedUser();
     
-    // In a real implementation, this would fetch from a wallet_transactions table
     const { data, error } = await supabase
       .from('wallet_transactions')
       .select(`

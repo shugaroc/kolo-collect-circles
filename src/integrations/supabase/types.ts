@@ -225,13 +225,113 @@ export type Database = {
           },
         ]
       }
+      user_wallets: {
+        Row: {
+          available_balance: number
+          created_at: string
+          fixed_balance: number
+          id: string
+          is_frozen: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number
+          created_at?: string
+          fixed_balance?: number
+          id?: string
+          is_frozen?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_balance?: number
+          created_at?: string
+          fixed_balance?: number
+          id?: string
+          is_frozen?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          community_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          recipient_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          community_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          recipient_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          community_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          recipient_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      apply_penalty: {
+        Args: { p_user_id: string; p_community_id: string; p_amount: number }
+        Returns: boolean
+      }
+      deposit_funds: {
+        Args: { p_user_id: string; p_amount: number }
+        Returns: boolean
+      }
+      fix_funds: {
+        Args: { p_user_id: string; p_amount: number; p_release_date: string }
+        Returns: boolean
+      }
       is_community_admin: {
         Args: { community_id: string }
+        Returns: boolean
+      }
+      process_contribution: {
+        Args: {
+          p_user_id: string
+          p_community_id: string
+          p_amount: number
+          p_cycle_id: string
+        }
+        Returns: boolean
+      }
+      process_payout: {
+        Args: { p_user_id: string; p_community_id: string; p_amount: number }
+        Returns: boolean
+      }
+      withdraw_funds: {
+        Args: { p_user_id: string; p_amount: number }
         Returns: boolean
       }
     }

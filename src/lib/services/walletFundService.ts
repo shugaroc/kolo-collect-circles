@@ -27,7 +27,7 @@ export const depositFunds = async ({ amount }: DepositFundsParams) => {
 
     const user = await getAuthenticatedUser();
     
-    // Start a transaction
+    // Call the deposit_funds stored procedure
     const { data, error } = await supabase.rpc('deposit_funds', {
       p_user_id: user.id,
       p_amount: amount,
@@ -86,7 +86,7 @@ export const withdrawFunds = async ({ amount }: WithdrawFundsParams) => {
       throw new Error("Insufficient available balance");
     }
     
-    // Perform the withdrawal
+    // Call the withdraw_funds stored procedure
     const { data, error } = await supabase.rpc('withdraw_funds', {
       p_user_id: user.id,
       p_amount: amount,
@@ -145,7 +145,7 @@ export const fixFunds = async ({ amount, duration = 30 }: FixFundsParams) => {
     const releaseDate = new Date();
     releaseDate.setDate(releaseDate.getDate() + duration);
     
-    // Fix the funds
+    // Call the fix_funds stored procedure
     const { data, error } = await supabase.rpc('fix_funds', {
       p_user_id: user.id,
       p_amount: amount,

@@ -46,7 +46,7 @@ export const applyPenalty = async ({ userId, communityId, amount, reason }: Appl
       throw communityError;
     }
     
-    // Apply penalty
+    // Apply penalty using the stored procedure
     const { data, error } = await supabase.rpc('apply_penalty', {
       p_user_id: userId,
       p_community_id: communityId,

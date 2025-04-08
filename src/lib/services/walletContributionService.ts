@@ -74,7 +74,7 @@ export const processContribution = async ({ communityId, amount, cycleId }: Cont
       throw new Error("Insufficient available balance");
     }
     
-    // Process contribution
+    // Process contribution using the stored procedure
     const { data, error } = await supabase.rpc('process_contribution', {
       p_user_id: user.id,
       p_community_id: communityId,
@@ -123,7 +123,7 @@ export const recordPayout = async (userId: string, communityId: string, amount: 
       throw communityError;
     }
     
-    // Process payout
+    // Process payout using the stored procedure
     const { data, error } = await supabase.rpc('process_payout', {
       p_user_id: userId,
       p_community_id: communityId,
