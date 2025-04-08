@@ -28,107 +28,92 @@ import {
   AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
-
-// Mock transaction type
-interface Transaction {
-  id: string;
-  amount: number;
-  type: "deposit" | "withdrawal" | "contribution" | "penalty" | "transfer" | "payout" | "fixed";
-  description: string;
-  date: string;
-  community?: string;
-}
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchWalletBalance, fetchTransactionHistory, WalletBalance, WalletTransaction } from "@/lib/walletService";
+import { depositFunds, withdrawFunds } from "@/lib/walletService";
 
 const Wallet = () => {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [walletBalance, setWalletBalance] = useState<WalletBalance>({
+    availableBalance: 0,
+    fixedBalance: 0,
+    totalBalance: 0,
+    isFrozen: false
+  });
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   
-  // Mock wallet data
-  const wallet = {
-    availableBalance: 250.75,
-    fixedBalance: 500.00,
-    totalBalance: 750.75
-  };
-  
-  // Mock transactions
-  const transactions: Transaction[] = [
-    {
-      id: "1",
-      amount: 50,
-      type: "deposit",
-      description: "Bank deposit",
-      date: "Feb 12, 2024",
-    },
-    {
-      id: "2",
-      amount: 30,
-      type: "contribution",
-      description: "Monthly contribution",
-      date: "Feb 10, 2024",
-      community: "Family Savings Circle"
-    },
-    {
-      id: "3",
-      amount: 650,
-      type: "payout",
-      description: "Circle payout",
-      date: "Feb 5, 2024",
-      community: "Friends Investment Group"
-    },
-    {
-      id: "4",
-      amount: 5,
-      type: "penalty",
-      description: "Late contribution penalty",
-      date: "Feb 3, 2024",
-      community: "Family Savings Circle"
-    },
-    {
-      id: "5",
-      amount: 200,
-      type: "withdrawal",
-      description: "ATM withdrawal",
-      date: "Jan 28, 2024",
-    },
-  ];
-
   useEffect(() => {
-    // Simulate API loading
-    const timer = setTimeout(() => {
+    const loadWalletData = async () => {
+      setIsLoading(true);
+      
+      if (user) {
+        try {
+          // Fetch wallet balance
+          const balance = await fetchWalletBalance();
+          setWalletBalance(balance);
+          
+          // Fetch transaction history
+          const history = await fetchTransactionHistory();
+          setTransactions(history);
+        } catch (error) {
+          console.error("Error loading wallet data:", error);
+          toast.error("Failed to load wallet data");
+        }
+      }
+      
       setIsLoading(false);
-    }, 1000);
+    };
     
-    return () => clearTimeout(timer);
-  }, []);
+    loadWalletData();
+  }, [user]);
 
-  const handleDeposit = () => {
+  const handleDeposit = async () => {
     const amount = parseFloat(depositAmount);
     if (!amount || isNaN(amount) || amount <= 0) {
       toast.error("Please enter a valid amount");
       return;
     }
     
-    // Simulate deposit
-    toast.success(`Successfully deposited €${amount}`);
-    setDepositAmount("");
+    try {
+      await depositFunds({ amount });
+      
+      // Refresh wallet data
+      const balance = await fetchWalletBalance();
+      setWalletBalance(balance);
+      
+      const history = await fetchTransactionHistory();
+      setTransactions(history);
+      
+      setDepositAmount("");
+    } catch (error) {
+      // Error is handled by the service function
+    }
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     const amount = parseFloat(withdrawAmount);
     if (!amount || isNaN(amount) || amount <= 0) {
       toast.error("Please enter a valid amount");
       return;
     }
     
-    if (amount > wallet.availableBalance) {
-      toast.error("Insufficient available balance");
-      return;
+    try {
+      await withdrawFunds({ amount });
+      
+      // Refresh wallet data
+      const balance = await fetchWalletBalance();
+      setWalletBalance(balance);
+      
+      const history = await fetchTransactionHistory();
+      setTransactions(history);
+      
+      setWithdrawAmount("");
+    } catch (error) {
+      // Error is handled by the service function
     }
-    
-    // Simulate withdrawal
-    toast.success(`Successfully withdrew €${amount}`);
-    setWithdrawAmount("");
   };
   
   const getTransactionIcon = (type: string) => {
@@ -199,7 +184,7 @@ const Wallet = () => {
                     <WalletIcon className="h-5 w-5" />
                     <p className="text-sm opacity-80">Total Balance</p>
                   </div>
-                  <h3 className="text-2xl font-bold mt-2">€{wallet.totalBalance.toFixed(2)}</h3>
+                  <h3 className="text-2xl font-bold mt-2">€{walletBalance.totalBalance.toFixed(2)}</h3>
                 </CardContent>
               </Card>
               
@@ -209,7 +194,7 @@ const Wallet = () => {
                     <ArrowUpRight className="h-5 w-5 text-kolo-purple" />
                     <p className="text-sm text-gray-500">Available</p>
                   </div>
-                  <h3 className="text-2xl font-bold mt-2 text-kolo-purple">€{wallet.availableBalance.toFixed(2)}</h3>
+                  <h3 className="text-2xl font-bold mt-2 text-kolo-purple">€{walletBalance.availableBalance.toFixed(2)}</h3>
                 </CardContent>
               </Card>
               
@@ -219,10 +204,24 @@ const Wallet = () => {
                     <Lock className="h-5 w-5 text-kolo-purple" />
                     <p className="text-sm text-gray-500">Fixed</p>
                   </div>
-                  <h3 className="text-2xl font-bold mt-2 text-kolo-purple">€{wallet.fixedBalance.toFixed(2)}</h3>
+                  <h3 className="text-2xl font-bold mt-2 text-kolo-purple">€{walletBalance.fixedBalance.toFixed(2)}</h3>
                 </CardContent>
               </Card>
             </div>
+            
+            {walletBalance.isFrozen && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-red-800">Account Frozen</h4>
+                    <p className="text-red-600 text-sm">
+                      Your wallet is currently frozen. Please contact support for assistance.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Recent Transactions</h3>
@@ -237,35 +236,43 @@ const Wallet = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getTransactionIcon(transaction.type)}
-                            {getTransactionBadge(transaction.type)}
-                          </div>
+                    {transactions.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                          No transactions yet
                         </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{transaction.description}</p>
-                            {transaction.community && (
-                              <p className="text-xs text-gray-500">{transaction.community}</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className={`font-medium ${
-                          ['deposit', 'payout'].includes(transaction.type) 
-                            ? 'text-green-600' 
-                            : ['withdrawal', 'contribution', 'penalty'].includes(transaction.type) 
-                              ? 'text-red-600' 
-                              : ''
-                        }`}>
-                          {['deposit', 'payout'].includes(transaction.type) ? '+' : '-'}
-                          €{transaction.amount.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-gray-500">{transaction.date}</TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      transactions.map((transaction) => (
+                        <TableRow key={transaction.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getTransactionIcon(transaction.type)}
+                              {getTransactionBadge(transaction.type)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{transaction.description}</p>
+                              {transaction.community_name && (
+                                <p className="text-xs text-gray-500">{transaction.community_name}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className={`font-medium ${
+                            ['deposit', 'payout'].includes(transaction.type) 
+                              ? 'text-green-600' 
+                              : ['withdrawal', 'contribution', 'penalty'].includes(transaction.type) 
+                                ? 'text-red-600' 
+                                : ''
+                          }`}>
+                            {['deposit', 'payout'].includes(transaction.type) ? '+' : '-'}
+                            €{transaction.amount.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-gray-500">{transaction.date}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -296,7 +303,11 @@ const Wallet = () => {
                     />
                   </div>
                 </div>
-                <Button className="w-full" onClick={handleDeposit}>
+                <Button 
+                  className="w-full" 
+                  onClick={handleDeposit}
+                  disabled={walletBalance.isFrozen}
+                >
                   <ArrowUpRight className="h-4 w-4 mr-2" />
                   Deposit
                 </Button>
@@ -323,14 +334,19 @@ const Wallet = () => {
                       type="number"
                       step="0.01"
                       min="0"
-                      max={wallet.availableBalance}
+                      max={walletBalance.availableBalance}
                     />
                   </div>
                   <p className="text-xs text-gray-500">
-                    Available: €{wallet.availableBalance.toFixed(2)}
+                    Available: €{walletBalance.availableBalance.toFixed(2)}
                   </p>
                 </div>
-                <Button className="w-full" variant="outline" onClick={handleWithdraw}>
+                <Button 
+                  className="w-full" 
+                  variant="outline" 
+                  onClick={handleWithdraw}
+                  disabled={walletBalance.isFrozen || walletBalance.availableBalance <= 0}
+                >
                   <ArrowDownLeft className="h-4 w-4 mr-2" />
                   Withdraw
                 </Button>

@@ -7,18 +7,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { fetchCommunities } from "@/lib/communityService";
+import { fetchWalletBalance } from "@/lib/walletService";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [communities, setCommunities] = useState<any[]>([]);
+  const [walletBalance, setWalletBalance] = useState({
+    availableBalance: 0,
+    fixedBalance: 0
+  });
   
-  // Mock data for wallet and activities
-  const walletData = {
-    availableBalance: 250.75,
-    fixedBalance: 500.00,
-  };
-
+  // Mock data for activities
   const activities = [
     {
       id: "1",
@@ -63,6 +63,7 @@ const Dashboard = () => {
       
       if (user) {
         try {
+          // Load communities
           const communitiesData = await fetchCommunities('my');
           setCommunities(communitiesData.map((community: any) => ({
             id: community.id,
@@ -73,8 +74,15 @@ const Dashboard = () => {
             nextCycle: formatNextCycleDate(community.status),
             status: community.status
           })));
+          
+          // Load wallet data
+          const walletData = await fetchWalletBalance();
+          setWalletBalance({
+            availableBalance: walletData.availableBalance,
+            fixedBalance: walletData.fixedBalance
+          });
         } catch (error) {
-          console.error("Failed to load communities:", error);
+          console.error("Failed to load dashboard data:", error);
         }
       }
       
@@ -122,8 +130,8 @@ const Dashboard = () => {
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <WalletSummary
-              availableBalance={walletData.availableBalance}
-              fixedBalance={walletData.fixedBalance}
+              availableBalance={walletBalance.availableBalance}
+              fixedBalance={walletBalance.fixedBalance}
             />
             
             <div className="md:col-span-2">

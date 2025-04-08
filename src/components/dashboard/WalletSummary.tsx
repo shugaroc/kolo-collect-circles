@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ArrowDownLeft, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface WalletSummaryProps {
   availableBalance: number;
@@ -35,14 +36,18 @@ const WalletSummary = ({ availableBalance, fixedBalance }: WalletSummaryProps) =
           </div>
           
           <div className="flex justify-between gap-2">
-            <Button className="w-full text-xs" size="sm" variant="outline">
-              <ArrowUpRight className="h-4 w-4 mr-1" />
-              Deposit
-            </Button>
-            <Button className="w-full text-xs" size="sm" variant="outline">
-              <ArrowDownLeft className="h-4 w-4 mr-1" />
-              Withdraw
-            </Button>
+            <Link to="/wallet" className="w-full">
+              <Button className="w-full text-xs" size="sm" variant="outline">
+                <ArrowUpRight className="h-4 w-4 mr-1" />
+                Deposit
+              </Button>
+            </Link>
+            <Link to="/wallet" className="w-full">
+              <Button className="w-full text-xs" size="sm" variant="outline">
+                <ArrowDownLeft className="h-4 w-4 mr-1" />
+                Withdraw
+              </Button>
+            </Link>
           </div>
         </div>
       </CardContent>
