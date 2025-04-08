@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowRightLeft, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { transferFunds } from "@/lib/walletService";
 
 interface TransferFundsFormProps {
   availableBalance: number;
@@ -45,33 +45,17 @@ const TransferFundsForm = ({ availableBalance, onTransferComplete }: TransferFun
 
     setIsTransferring(true);
     try {
-      // First, lookup the recipient user by email using auth.users
-      // Since we can't query auth.users directly, we'll query users via their profiles
-      const { data: authUser } = await supabase.auth.getUser();
+      await transferFunds({
+        recipientEmail: recipient,
+        amount: transferAmount
+      });
       
-      if (!authUser?.user) {
-        toast.error("You must be logged in to transfer funds");
-        setIsTransferring(false);
-        return;
-      }
-      
-      // Get recipient's user ID by email - we'll use a custom function or view here
-      // For now, we'll simulate this with a mock delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In a real implementation, we would:
-      // 1. Check if recipient exists (via a Supabase function)
-      // 2. Reduce sender's balance
-      // 3. Increase recipient's balance
-      // 4. Create transaction records for both parties
-      
-      toast.success(`Successfully transferred €${transferAmount.toFixed(2)} to ${recipient}`);
       setAmount("");
       setRecipient("");
       onTransferComplete();
     } catch (error) {
-      toast.error("Failed to transfer funds");
       console.error("Transfer error:", error);
+      // Main error messages are handled within the transferFunds function
     } finally {
       setIsTransferring(false);
     }

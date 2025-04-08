@@ -6,3 +6,5 @@ export * from './services/walletService';
 export * from './services/walletFundService';
 export * from './services/walletContributionService';
 export * from './services/walletAdminService';
+export * from './services/walletUserService';
+
