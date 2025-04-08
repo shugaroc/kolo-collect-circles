@@ -27,11 +27,14 @@ export const depositFunds = async ({ amount }: DepositFundsParams) => {
 
     const user = await getAuthenticatedUser();
     
-    // Call the deposit_funds stored procedure
-    const { data, error } = await supabase.rpc('deposit_funds', {
-      p_user_id: user.id,
-      p_amount: amount,
-    });
+    // Call the deposit_funds function using RPC
+    const { data, error } = await supabase.rpc(
+      'deposit_funds',
+      {
+        p_user_id: user.id,
+        p_amount: amount,
+      }
+    );
     
     if (error) {
       console.error("Error depositing funds:", error);
@@ -39,12 +42,14 @@ export const depositFunds = async ({ amount }: DepositFundsParams) => {
     }
     
     // Log the transaction
-    await supabase.from('wallet_transactions').insert({
-      user_id: user.id,
-      amount: amount,
-      type: 'deposit',
-      description: 'Funds added to wallet',
-    });
+    await supabase
+      .from('wallet_transactions' as any)
+      .insert({
+        user_id: user.id,
+        amount: amount,
+        type: 'deposit',
+        description: 'Funds added to wallet',
+      });
     
     toast.success(`Successfully deposited €${amount.toFixed(2)}`);
     return data;
@@ -68,7 +73,7 @@ export const withdrawFunds = async ({ amount }: WithdrawFundsParams) => {
     
     // Check if wallet is frozen
     const { data: wallet, error: walletError } = await supabase
-      .from('user_wallets')
+      .from('user_wallets' as any)
       .select('is_frozen, available_balance')
       .eq('user_id', user.id)
       .single();
@@ -87,10 +92,13 @@ export const withdrawFunds = async ({ amount }: WithdrawFundsParams) => {
     }
     
     // Call the withdraw_funds stored procedure
-    const { data, error } = await supabase.rpc('withdraw_funds', {
-      p_user_id: user.id,
-      p_amount: amount,
-    });
+    const { data, error } = await supabase.rpc(
+      'withdraw_funds',
+      {
+        p_user_id: user.id,
+        p_amount: amount,
+      }
+    );
     
     if (error) {
       console.error("Error withdrawing funds:", error);
@@ -98,12 +106,14 @@ export const withdrawFunds = async ({ amount }: WithdrawFundsParams) => {
     }
     
     // Log the transaction
-    await supabase.from('wallet_transactions').insert({
-      user_id: user.id,
-      amount: amount,
-      type: 'withdrawal',
-      description: 'Funds withdrawn from wallet',
-    });
+    await supabase
+      .from('wallet_transactions' as any)
+      .insert({
+        user_id: user.id,
+        amount: amount,
+        type: 'withdrawal',
+        description: 'Funds withdrawn from wallet',
+      });
     
     toast.success(`Successfully withdrew €${amount.toFixed(2)}`);
     return data;
@@ -127,7 +137,7 @@ export const fixFunds = async ({ amount, duration = 30 }: FixFundsParams) => {
     
     // Check available balance
     const { data: wallet, error: walletError } = await supabase
-      .from('user_wallets')
+      .from('user_wallets' as any)
       .select('available_balance')
       .eq('user_id', user.id)
       .single();
@@ -146,11 +156,14 @@ export const fixFunds = async ({ amount, duration = 30 }: FixFundsParams) => {
     releaseDate.setDate(releaseDate.getDate() + duration);
     
     // Call the fix_funds stored procedure
-    const { data, error } = await supabase.rpc('fix_funds', {
-      p_user_id: user.id,
-      p_amount: amount,
-      p_release_date: releaseDate.toISOString(),
-    });
+    const { data, error } = await supabase.rpc(
+      'fix_funds',
+      {
+        p_user_id: user.id,
+        p_amount: amount,
+        p_release_date: releaseDate.toISOString(),
+      }
+    );
     
     if (error) {
       console.error("Error fixing funds:", error);
@@ -158,12 +171,14 @@ export const fixFunds = async ({ amount, duration = 30 }: FixFundsParams) => {
     }
     
     // Log the transaction
-    await supabase.from('wallet_transactions').insert({
-      user_id: user.id,
-      amount: amount,
-      type: 'fixed',
-      description: `Funds locked until ${releaseDate.toLocaleDateString()}`,
-    });
+    await supabase
+      .from('wallet_transactions' as any)
+      .insert({
+        user_id: user.id,
+        amount: amount,
+        type: 'fixed',
+        description: `Funds locked until ${releaseDate.toLocaleDateString()}`,
+      });
     
     toast.success(`Successfully locked €${amount.toFixed(2)} until ${releaseDate.toLocaleDateString()}`);
     return data;

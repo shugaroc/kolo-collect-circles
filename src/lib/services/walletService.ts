@@ -30,8 +30,9 @@ export const fetchWalletBalance = async (): Promise<WalletBalance> => {
   try {
     const user = await getAuthenticatedUser();
     
+    // Use explicit type casting to resolve TypeScript issues
     const { data, error } = await supabase
-      .from('user_wallets')
+      .from('user_wallets' as any)
       .select('available_balance, fixed_balance, is_frozen')
       .eq('user_id', user.id)
       .single();
@@ -78,8 +79,9 @@ export const fetchTransactionHistory = async (): Promise<WalletTransaction[]> =>
   try {
     const user = await getAuthenticatedUser();
     
+    // Use explicit type casting to resolve TypeScript issues
     const { data, error } = await supabase
-      .from('wallet_transactions')
+      .from('wallet_transactions' as any)
       .select(`
         id,
         amount,

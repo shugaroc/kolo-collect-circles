@@ -47,11 +47,14 @@ export const applyPenalty = async ({ userId, communityId, amount, reason }: Appl
     }
     
     // Apply penalty using the stored procedure
-    const { data, error } = await supabase.rpc('apply_penalty', {
-      p_user_id: userId,
-      p_community_id: communityId,
-      p_amount: amount,
-    });
+    const { data, error } = await supabase.rpc(
+      'apply_penalty',
+      {
+        p_user_id: userId,
+        p_community_id: communityId,
+        p_amount: amount,
+      }
+    );
     
     if (error) {
       console.error("Error applying penalty:", error);
@@ -59,13 +62,15 @@ export const applyPenalty = async ({ userId, communityId, amount, reason }: Appl
     }
     
     // Log the transaction
-    await supabase.from('wallet_transactions').insert({
-      user_id: userId,
-      amount: amount,
-      type: 'penalty',
-      description: reason || `Penalty from ${community.name}`,
-      community_id: communityId
-    });
+    await supabase
+      .from('wallet_transactions' as any)
+      .insert({
+        user_id: userId,
+        amount: amount,
+        type: 'penalty',
+        description: reason || `Penalty from ${community.name}`,
+        community_id: communityId
+      });
     
     // Update community member record
     await supabase
@@ -106,7 +111,7 @@ export const updateWalletStatus = async ({ userId, isFrozen, reason }: UpdateWal
     
     // Update wallet status
     const { data, error } = await supabase
-      .from('user_wallets')
+      .from('user_wallets' as any)
       .update({ is_frozen: isFrozen })
       .eq('user_id', userId);
     
@@ -137,7 +142,7 @@ export const getFlaggedWallets = async () => {
     // In a real implementation, this would have a sophisticated query
     // For now, we'll just get wallets with frozen status
     const { data, error } = await supabase
-      .from('user_wallets')
+      .from('user_wallets' as any)
       .select(`
         user_id,
         available_balance,

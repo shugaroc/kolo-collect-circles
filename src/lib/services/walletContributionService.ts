@@ -56,7 +56,7 @@ export const processContribution = async ({ communityId, amount, cycleId }: Cont
     
     // Check wallet balance
     const { data: wallet, error: walletError } = await supabase
-      .from('user_wallets')
+      .from('user_wallets' as any)
       .select('available_balance, is_frozen')
       .eq('user_id', user.id)
       .single();
@@ -75,12 +75,15 @@ export const processContribution = async ({ communityId, amount, cycleId }: Cont
     }
     
     // Process contribution using the stored procedure
-    const { data, error } = await supabase.rpc('process_contribution', {
-      p_user_id: user.id,
-      p_community_id: communityId,
-      p_amount: amount,
-      p_cycle_id: cycleId || null,
-    });
+    const { data, error } = await supabase.rpc(
+      'process_contribution',
+      {
+        p_user_id: user.id,
+        p_community_id: communityId,
+        p_amount: amount,
+        p_cycle_id: cycleId || null,
+      }
+    );
     
     if (error) {
       console.error("Error processing contribution:", error);
@@ -88,13 +91,15 @@ export const processContribution = async ({ communityId, amount, cycleId }: Cont
     }
     
     // Log the transaction
-    await supabase.from('wallet_transactions').insert({
-      user_id: user.id,
-      amount: amount,
-      type: 'contribution',
-      description: `Contribution to ${community.name}`,
-      community_id: communityId
-    });
+    await supabase
+      .from('wallet_transactions' as any)
+      .insert({
+        user_id: user.id,
+        amount: amount,
+        type: 'contribution',
+        description: `Contribution to ${community.name}`,
+        community_id: communityId
+      });
     
     toast.success(`Successfully contributed €${amount.toFixed(2)} to ${community.name}`);
     return data;
@@ -124,11 +129,14 @@ export const recordPayout = async (userId: string, communityId: string, amount: 
     }
     
     // Process payout using the stored procedure
-    const { data, error } = await supabase.rpc('process_payout', {
-      p_user_id: userId,
-      p_community_id: communityId,
-      p_amount: amount,
-    });
+    const { data, error } = await supabase.rpc(
+      'process_payout',
+      {
+        p_user_id: userId,
+        p_community_id: communityId,
+        p_amount: amount,
+      }
+    );
     
     if (error) {
       console.error("Error processing payout:", error);
@@ -136,13 +144,15 @@ export const recordPayout = async (userId: string, communityId: string, amount: 
     }
     
     // Log the transaction
-    await supabase.from('wallet_transactions').insert({
-      user_id: userId,
-      amount: amount,
-      type: 'payout',
-      description: `Payout from ${community.name}`,
-      community_id: communityId
-    });
+    await supabase
+      .from('wallet_transactions' as any)
+      .insert({
+        user_id: userId,
+        amount: amount,
+        type: 'payout',
+        description: `Payout from ${community.name}`,
+        community_id: communityId
+      });
     
     return data;
   } catch (error: any) {
