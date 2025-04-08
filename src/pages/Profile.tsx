@@ -36,7 +36,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -55,10 +55,10 @@ const Profile = () => {
       
       setIsLoading(true);
       try {
-        // Get user profile data
+        // The SQL migration has created the profiles table
         const { data, error } = await supabase
           .from('profiles')
-          .select('full_name, phone_number')
+          .select('*')
           .eq('id', user.id)
           .single();
         
@@ -138,13 +138,6 @@ const Profile = () => {
       });
       
       if (userUpdateError) throw userUpdateError;
-      
-      if (typeof updateProfile === 'function') {
-        updateProfile({
-          fullName: values.fullName,
-          phoneNumber: values.phoneNumber
-        });
-      }
       
       toast.success("Profile updated successfully");
     } catch (error) {

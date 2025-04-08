@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowRightLeft, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TransferFundsFormProps {
   availableBalance: number;
@@ -44,7 +45,26 @@ const TransferFundsForm = ({ availableBalance, onTransferComplete }: TransferFun
 
     setIsTransferring(true);
     try {
-      // This would be replaced with an actual API call to transfer funds
+      // First, lookup the recipient user by email
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', recipient.trim())
+        .maybeSingle();
+      
+      if (userError || !userData) {
+        toast.error("Recipient user not found");
+        return;
+      }
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to transfer funds");
+        return;
+      }
+      
+      // Mock transfer (in a real app, you'd use a database transaction)
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       toast.success(`Successfully transferred €${transferAmount.toFixed(2)} to ${recipient}`);

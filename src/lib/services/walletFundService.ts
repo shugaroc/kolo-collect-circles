@@ -3,201 +3,169 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getAuthenticatedUser } from "./baseService";
 
-interface DepositFundsParams {
-  amount: number;
-}
-
-interface WithdrawFundsParams {
-  amount: number;
-}
-
-interface FixFundsParams {
-  amount: number;
-  duration?: number; // Duration in days
-}
-
 /**
- * Adds funds to the user's wallet
+ * Deposits funds into user's wallet
  */
-export const depositFunds = async ({ amount }: DepositFundsParams) => {
+export const depositFunds = async ({ 
+  amount 
+} : { 
+  amount: number 
+}) => {
   try {
-    if (!amount || amount <= 0) {
-      throw new Error("Please enter a valid amount");
-    }
-
     const user = await getAuthenticatedUser();
     
-    // Call the deposit_funds function using RPC
-    const { data, error } = await supabase.rpc(
-      'deposit_funds',
-      {
+    // Call database function to deposit funds
+    const { data, error } = await supabase
+      .rpc('deposit_funds', {
         p_user_id: user.id,
-        p_amount: amount,
-      }
-    );
-    
+        p_amount: amount
+      });
+      
     if (error) {
-      console.error("Error depositing funds:", error);
+      console.error('Deposit error:', error);
+      toast.error('Failed to deposit funds');
       throw error;
     }
     
-    // Log the transaction
+    // Create a transaction record
     await supabase
       .from('wallet_transactions')
       .insert({
         user_id: user.id,
-        amount: amount,
         type: 'deposit',
-        description: 'Funds added to wallet',
+        amount: amount,
+        description: 'Manual deposit'
       });
     
     toast.success(`Successfully deposited €${amount.toFixed(2)}`);
-    return data;
-  } catch (error: any) {
-    console.error("Failed to deposit funds:", error);
-    toast.error(`Error depositing funds: ${error.message}`);
+    return true;
+  } catch (error) {
+    console.error('Deposit error:', error);
+    toast.error('Failed to deposit funds');
     throw error;
   }
 };
 
 /**
- * Withdraws funds from the user's wallet
+ * Withdraws funds from user's wallet
  */
-export const withdrawFunds = async ({ amount }: WithdrawFundsParams) => {
+export const withdrawFunds = async ({
+  amount
+} : {
+  amount: number
+}) => {
   try {
-    if (!amount || amount <= 0) {
-      throw new Error("Please enter a valid amount");
-    }
-
     const user = await getAuthenticatedUser();
     
-    // Check if wallet is frozen
+    // Get wallet to check if it's frozen
     const { data: wallet, error: walletError } = await supabase
       .from('user_wallets')
       .select('is_frozen, available_balance')
       .eq('user_id', user.id)
       .single();
     
-    if (walletError) {
-      console.error("Error checking wallet status:", walletError);
-      throw walletError;
+    if (walletError) throw walletError;
+    
+    if (wallet.is_frozen) {
+      toast.error('Wallet is frozen. Please contact support.');
+      return false;
     }
     
-    // Use type assertion with verification
-    if (!wallet || typeof wallet !== 'object') {
-      throw new Error("Wallet data unavailable");
+    if (wallet.available_balance < amount) {
+      toast.error('Insufficient funds');
+      return false;
     }
     
-    const isFrozen = Boolean(wallet.is_frozen);
-    if (isFrozen) {
-      throw new Error("Your wallet is currently frozen. Please contact support.");
-    }
-    
-    const availableBalance = typeof wallet.available_balance === 'number' ? wallet.available_balance : 0;
-    if (availableBalance < amount) {
-      throw new Error("Insufficient available balance");
-    }
-    
-    // Call the withdraw_funds stored procedure
-    const { data, error } = await supabase.rpc(
-      'withdraw_funds',
-      {
+    // Call database function to withdraw funds
+    const { data, error } = await supabase
+      .rpc('withdraw_funds', {
         p_user_id: user.id,
-        p_amount: amount,
-      }
-    );
-    
+        p_amount: amount
+      });
+      
     if (error) {
-      console.error("Error withdrawing funds:", error);
+      console.error('Withdrawal error:', error);
+      toast.error(error.message || 'Failed to withdraw funds');
       throw error;
     }
     
-    // Log the transaction
+    // Create a transaction record
     await supabase
       .from('wallet_transactions')
       .insert({
         user_id: user.id,
-        amount: amount,
         type: 'withdrawal',
-        description: 'Funds withdrawn from wallet',
+        amount: amount,
+        description: 'Manual withdrawal'
       });
     
     toast.success(`Successfully withdrew €${amount.toFixed(2)}`);
-    return data;
-  } catch (error: any) {
-    console.error("Failed to withdraw funds:", error);
-    toast.error(`Error withdrawing funds: ${error.message}`);
+    return true;
+  } catch (error) {
+    console.error('Withdrawal error:', error);
+    toast.error('Failed to withdraw funds');
     throw error;
   }
 };
 
 /**
- * Moves funds from available to fixed balance
+ * Lock funds for a specified duration
  */
-export const fixFunds = async ({ amount, duration = 30 }: FixFundsParams) => {
+export const fixFunds = async ({
+  amount,
+  duration,
+  releaseDate
+} : {
+  amount: number,
+  duration: number,
+  releaseDate: string
+}) => {
   try {
-    if (!amount || amount <= 0) {
-      throw new Error("Please enter a valid amount");
-    }
-
     const user = await getAuthenticatedUser();
     
-    // Check available balance
+    // Check if wallet has enough available balance
     const { data: wallet, error: walletError } = await supabase
       .from('user_wallets')
       .select('available_balance')
       .eq('user_id', user.id)
       .single();
     
-    if (walletError) {
-      console.error("Error checking wallet balance:", walletError);
-      throw walletError;
+    if (walletError) throw walletError;
+    
+    if (wallet.available_balance < amount) {
+      toast.error('Insufficient funds');
+      return false;
     }
     
-    // Use type assertion with verification
-    if (!wallet || typeof wallet !== 'object') {
-      throw new Error("Wallet data unavailable");
-    }
-    
-    const availableBalance = typeof wallet.available_balance === 'number' ? wallet.available_balance : 0;
-    if (availableBalance < amount) {
-      throw new Error("Insufficient available balance");
-    }
-    
-    // Calculate release date
-    const releaseDate = new Date();
-    releaseDate.setDate(releaseDate.getDate() + duration);
-    
-    // Call the fix_funds stored procedure
-    const { data, error } = await supabase.rpc(
-      'fix_funds',
-      {
+    // Call database function to fix funds
+    const { data, error } = await supabase
+      .rpc('fix_funds', {
         p_user_id: user.id,
         p_amount: amount,
-        p_release_date: releaseDate.toISOString(),
-      }
-    );
-    
+        p_release_date: releaseDate
+      });
+      
     if (error) {
-      console.error("Error fixing funds:", error);
+      console.error('Fix funds error:', error);
+      toast.error(error.message || 'Failed to lock funds');
       throw error;
     }
     
-    // Log the transaction
+    // Create a transaction record
     await supabase
       .from('wallet_transactions')
       .insert({
         user_id: user.id,
-        amount: amount,
         type: 'fixed',
-        description: `Funds locked until ${releaseDate.toLocaleDateString()}`,
+        amount: amount,
+        description: `Funds locked for ${duration} days`
       });
     
-    toast.success(`Successfully locked €${amount.toFixed(2)} until ${releaseDate.toLocaleDateString()}`);
-    return data;
-  } catch (error: any) {
-    console.error("Failed to fix funds:", error);
-    toast.error(`Error locking funds: ${error.message}`);
+    toast.success(`Successfully locked €${amount.toFixed(2)} for ${duration} days`);
+    return true;
+  } catch (error) {
+    console.error('Fix funds error:', error);
+    toast.error('Failed to lock funds');
     throw error;
   }
 };

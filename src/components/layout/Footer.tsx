@@ -1,67 +1,67 @@
 
 import { Link } from "react-router-dom";
-import { ExternalLink, Mail, Github } from "lucide-react";
 
 const Footer = () => {
-  const currentYear = new Date().getFullYear();
-
+  const year = new Date().getFullYear();
+  
   return (
-    <footer className="border-t mt-16">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-kolo-purple rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">K</span>
+    <footer className="bg-white border-t mt-auto py-6">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="mb-4 md:mb-0">
+            <h3 className="text-xl font-bold text-kolo-purple">KoloCollect</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              A modern way to manage community savings.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-4 md:mb-0">
+            <div>
+              <h4 className="font-semibold mb-2 text-sm">Platform</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link to="/dashboard" className="text-gray-600 hover:text-kolo-purple">Dashboard</Link>
+                </li>
+                <li>
+                  <Link to="/communities" className="text-gray-600 hover:text-kolo-purple">Communities</Link>
+                </li>
+                <li>
+                  <Link to="/wallet" className="text-gray-600 hover:text-kolo-purple">Wallet</Link>
+                </li>
+              </ul>
             </div>
-            <span className="ml-2 font-semibold text-gray-800">KoloCollect</span>
-            <span className="ml-2 text-sm text-gray-500">© {currentYear}</span>
+            
+            <div>
+              <h4 className="font-semibold mb-2 text-sm">Account</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link to="/profile" className="text-gray-600 hover:text-kolo-purple">Profile</Link>
+                </li>
+                <li>
+                  <Link to="/settings" className="text-gray-600 hover:text-kolo-purple">Settings</Link>
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold mb-2 text-sm">Support</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <a href="#" className="text-gray-600 hover:text-kolo-purple">Help Center</a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-600 hover:text-kolo-purple">Contact Us</a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-600 hover:text-kolo-purple">Privacy Policy</a>
+                </li>
+              </ul>
+            </div>
           </div>
-
-          <div className="flex flex-wrap justify-center gap-6 text-sm">
-            <Link to="/about" className="text-gray-600 hover:text-kolo-purple transition-colors">
-              About
-            </Link>
-            <Link to="/terms" className="text-gray-600 hover:text-kolo-purple transition-colors">
-              Terms
-            </Link>
-            <Link to="/privacy" className="text-gray-600 hover:text-kolo-purple transition-colors">
-              Privacy
-            </Link>
-            <Link to="/faq" className="text-gray-600 hover:text-kolo-purple transition-colors">
-              FAQ
-            </Link>
-            <Link to="/contact" className="text-gray-600 hover:text-kolo-purple transition-colors">
-              Contact
-            </Link>
-          </div>
-
-          <div className="flex gap-4">
-            <a 
-              href="mailto:support@kolocollect.com" 
-              className="text-gray-600 hover:text-kolo-purple transition-colors"
-              aria-label="Email Support"
-            >
-              <Mail size={18} />
-            </a>
-            <a 
-              href="https://github.com/kolocollect" 
-              target="_blank" 
-              rel="noreferrer" 
-              className="text-gray-600 hover:text-kolo-purple transition-colors"
-              aria-label="GitHub"
-            >
-              <Github size={18} />
-            </a>
-            <a 
-              href="https://kolocollect.com" 
-              target="_blank" 
-              rel="noreferrer" 
-              className="text-gray-600 hover:text-kolo-purple transition-colors"
-              aria-label="Website"
-            >
-              <ExternalLink size={18} />
-            </a>
-          </div>
+        </div>
+        
+        <div className="border-t mt-6 pt-6 text-center text-sm text-gray-500">
+          <p>© {year} KoloCollect. All rights reserved.</p>
         </div>
       </div>
     </footer>

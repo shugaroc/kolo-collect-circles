@@ -41,7 +41,15 @@ const FixFundsForm = ({ availableBalance, onFixComplete }: FixFundsFormProps) =>
 
     setIsFixing(true);
     try {
-      await fixFunds({ amount: fixAmount, duration: parseInt(duration) });
+      // Calculate release date based on duration
+      const releaseDate = new Date();
+      releaseDate.setDate(releaseDate.getDate() + parseInt(duration));
+      
+      await fixFunds({ 
+        amount: fixAmount, 
+        duration: parseInt(duration),
+        releaseDate: releaseDate.toISOString()
+      });
       
       setAmount("");
       onFixComplete();

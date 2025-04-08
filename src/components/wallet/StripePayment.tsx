@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
-const stripePromise = loadStripe('pk_test_51LifchangethisW0ZfV0QNhLUCwepk2iZLwwBaZpksFzChBZNMf5Q6le7ZC');
+const stripePromise = loadStripe('pk_test_51LifdZ5vtFvW0ZfV0QNhLUCwepk2iZLwwBaZpksFzChBZNMf5Q6le7ZC');
 
 interface CheckoutFormProps {
   amount: number;
