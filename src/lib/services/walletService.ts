@@ -32,7 +32,7 @@ export const fetchWalletBalance = async (): Promise<WalletBalance> => {
     
     // Use explicit type casting to resolve TypeScript issues
     const { data, error } = await supabase
-      .from('user_wallets' as any)
+      .from('user_wallets')
       .select('available_balance, fixed_balance, is_frozen')
       .eq('user_id', user.id)
       .single();
@@ -51,14 +51,18 @@ export const fetchWalletBalance = async (): Promise<WalletBalance> => {
       throw error;
     }
     
+    // Safely access properties with defaults
+    const availableBalance = typeof data.available_balance === 'number' ? data.available_balance : 0;
+    const fixedBalance = typeof data.fixed_balance === 'number' ? data.fixed_balance : 0;
+    
     // Calculate total balance
-    const totalBalance = (data.available_balance || 0) + (data.fixed_balance || 0);
+    const totalBalance = availableBalance + fixedBalance;
     
     return {
-      availableBalance: data.available_balance || 0,
-      fixedBalance: data.fixed_balance || 0,
+      availableBalance,
+      fixedBalance,
       totalBalance,
-      isFrozen: data.is_frozen || false
+      isFrozen: Boolean(data.is_frozen)
     };
   } catch (error) {
     console.error("Failed to fetch wallet balance:", error);
@@ -81,7 +85,7 @@ export const fetchTransactionHistory = async (): Promise<WalletTransaction[]> =>
     
     // Use explicit type casting to resolve TypeScript issues
     const { data, error } = await supabase
-      .from('wallet_transactions' as any)
+      .from('wallet_transactions')
       .select(`
         id,
         amount,

@@ -63,7 +63,7 @@ export const applyPenalty = async ({ userId, communityId, amount, reason }: Appl
     
     // Log the transaction
     await supabase
-      .from('wallet_transactions' as any)
+      .from('wallet_transactions')
       .insert({
         user_id: userId,
         amount: amount,
@@ -111,7 +111,7 @@ export const updateWalletStatus = async ({ userId, isFrozen, reason }: UpdateWal
     
     // Update wallet status
     const { data, error } = await supabase
-      .from('user_wallets' as any)
+      .from('user_wallets')
       .update({ is_frozen: isFrozen })
       .eq('user_id', userId);
     
@@ -142,7 +142,7 @@ export const getFlaggedWallets = async () => {
     // In a real implementation, this would have a sophisticated query
     // For now, we'll just get wallets with frozen status
     const { data, error } = await supabase
-      .from('user_wallets' as any)
+      .from('user_wallets')
       .select(`
         user_id,
         available_balance,
@@ -157,7 +157,7 @@ export const getFlaggedWallets = async () => {
       throw error;
     }
     
-    return data;
+    return data || [];
   } catch (error: any) {
     console.error("Failed to get flagged wallets:", error);
     throw error;

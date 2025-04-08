@@ -43,7 +43,7 @@ export const depositFunds = async ({ amount }: DepositFundsParams) => {
     
     // Log the transaction
     await supabase
-      .from('wallet_transactions' as any)
+      .from('wallet_transactions')
       .insert({
         user_id: user.id,
         amount: amount,
@@ -73,7 +73,7 @@ export const withdrawFunds = async ({ amount }: WithdrawFundsParams) => {
     
     // Check if wallet is frozen
     const { data: wallet, error: walletError } = await supabase
-      .from('user_wallets' as any)
+      .from('user_wallets')
       .select('is_frozen, available_balance')
       .eq('user_id', user.id)
       .single();
@@ -83,11 +83,18 @@ export const withdrawFunds = async ({ amount }: WithdrawFundsParams) => {
       throw walletError;
     }
     
-    if (wallet.is_frozen) {
+    // Use type assertion with verification
+    if (!wallet || typeof wallet !== 'object') {
+      throw new Error("Wallet data unavailable");
+    }
+    
+    const isFrozen = Boolean(wallet.is_frozen);
+    if (isFrozen) {
       throw new Error("Your wallet is currently frozen. Please contact support.");
     }
     
-    if (wallet.available_balance < amount) {
+    const availableBalance = typeof wallet.available_balance === 'number' ? wallet.available_balance : 0;
+    if (availableBalance < amount) {
       throw new Error("Insufficient available balance");
     }
     
@@ -107,7 +114,7 @@ export const withdrawFunds = async ({ amount }: WithdrawFundsParams) => {
     
     // Log the transaction
     await supabase
-      .from('wallet_transactions' as any)
+      .from('wallet_transactions')
       .insert({
         user_id: user.id,
         amount: amount,
@@ -137,7 +144,7 @@ export const fixFunds = async ({ amount, duration = 30 }: FixFundsParams) => {
     
     // Check available balance
     const { data: wallet, error: walletError } = await supabase
-      .from('user_wallets' as any)
+      .from('user_wallets')
       .select('available_balance')
       .eq('user_id', user.id)
       .single();
@@ -147,7 +154,13 @@ export const fixFunds = async ({ amount, duration = 30 }: FixFundsParams) => {
       throw walletError;
     }
     
-    if (wallet.available_balance < amount) {
+    // Use type assertion with verification
+    if (!wallet || typeof wallet !== 'object') {
+      throw new Error("Wallet data unavailable");
+    }
+    
+    const availableBalance = typeof wallet.available_balance === 'number' ? wallet.available_balance : 0;
+    if (availableBalance < amount) {
       throw new Error("Insufficient available balance");
     }
     
@@ -172,7 +185,7 @@ export const fixFunds = async ({ amount, duration = 30 }: FixFundsParams) => {
     
     // Log the transaction
     await supabase
-      .from('wallet_transactions' as any)
+      .from('wallet_transactions')
       .insert({
         user_id: user.id,
         amount: amount,
